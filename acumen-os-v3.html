@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acumen OS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#1a1a1a;background:#f5f5f0;}
+.app{display:flex;height:100vh;}
+.sidebar{width:210px;background:#fff;border-right:1px solid #e8e8e4;display:flex;flex-direction:column;flex-shrink:0;}
+.logo{padding:18px 16px 14px;border-bottom:1px solid #e8e8e4;}
+.logo-name{font-size:15px;font-weight:600;color:#1a1a1a;}
+.logo-sub{font-size:10px;color:#999;margin-top:2px;}
+.nav{padding:10px 8px;flex:1;overflow-y:auto;}
+.nav-section{font-size:9px;color:#bbb;padding:8px 6px 3px;letter-spacing:.07em;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;cursor:pointer;font-size:12px;color:#666;margin-bottom:1px;transition:background .12s;}
+.nav-item:hover{background:#f5f5f0;color:#1a1a1a;}
+.nav-item.active{background:#EEF4FF;color:#2563eb;font-weight:500;}
+.nav-badge{margin-left:auto;background:#fee2e2;color:#dc2626;font-size:9px;font-weight:600;padding:1px 5px;border-radius:8px;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:#fff;border-bottom:1px solid #e8e8e4;padding:11px 22px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-title{font-size:14px;font-weight:600;}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.user-chip{display:flex;align-items:center;gap:7px;padding:5px 10px;border-radius:20px;border:1px solid #e8e8e4;font-size:11px;color:#666;cursor:pointer;}
+.user-av{width:22px;height:22px;border-radius:50%;background:#EEF4FF;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;}
+button{font-family:inherit;font-size:12px;padding:6px 13px;border-radius:7px;border:1px solid #e8e8e4;background:#fff;color:#1a1a1a;cursor:pointer;transition:background .12s;}
+button:hover{background:#f5f5f0;}
+button.primary{background:#2563eb;color:#fff;border-color:transparent;}
+button.primary:hover{background:#1d4ed8;}
+button.success{background:#16a34a;color:#fff;border-color:transparent;}
+button.danger{background:#dc2626;color:#fff;border-color:transparent;}
+.tabs{display:flex;gap:2px;padding:10px 22px 0;background:#fff;border-bottom:1px solid #e8e8e4;}
+.tab{padding:7px 14px;font-size:12px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s;}
+.tab.active{color:#2563eb;border-bottom-color:#2563eb;font-weight:500;}
+.content{flex:1;overflow-y:auto;padding:18px 22px;}
+input,select,textarea{font-family:inherit;font-size:12px;padding:7px 10px;border-radius:7px;border:1px solid #e8e8e4;background:#fff;color:#1a1a1a;width:100%;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2563eb;}
+textarea{resize:vertical;}
+.pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;}
+.p-mis{background:#EEF4FF;color:#1d4ed8;}
+.p-vat{background:#F3F0FF;color:#6d28d9;}
+.p-audit{background:#ECFDF5;color:#065f46;}
+.p-ct{background:#FFFBEB;color:#92400e;}
+.p-fov{background:#FFF0F3;color:#9f1239;}
+.p-payroll{background:#F0FDF4;color:#14532d;}
+.p-bookkeeping{background:#EEF4FF;color:#1e40af;}
+.p-custom{background:#F9F9F7;color:#4b5563;}
+.p-done{background:#ECFDF5;color:#065f46;}
+.p-pending{background:#FFFBEB;color:#92400e;}
+.p-overdue{background:#FEF2F2;color:#991b1b;}
+.p-inprogress{background:#EEF4FF;color:#1d4ed8;}
+.p-monthly{background:#EEF4FF;color:#1d4ed8;}
+.p-quarterly{background:#F3F0FF;color:#6d28d9;}
+.p-halfyearly{background:#FFFBEB;color:#92400e;}
+.p-yearly{background:#ECFDF5;color:#065f46;}
+.p-onetime{background:#F9F9F7;color:#4b5563;}
+.p-new{background:#EEF4FF;color:#1d4ed8;}
+.p-contacted{background:#F3F0FF;color:#6d28d9;}
+.p-proposal{background:#FFFBEB;color:#92400e;}
+.p-negotiation{background:#FFF0F3;color:#9f1239;}
+.p-won{background:#ECFDF5;color:#065f46;}
+.p-lost{background:#FEF2F2;color:#991b1b;}
+.p-hot{background:#FEF2F2;color:#991b1b;}
+.p-warm{background:#FFFBEB;color:#92400e;}
+.p-cold{background:#F9F9F7;color:#4b5563;}
+.p-dubai{background:#EEF4FF;color:#1d4ed8;}
+.p-calicut{background:#F3F0FF;color:#6d28d9;}
+.stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+.stat{background:#F9F9F7;border-radius:8px;padding:13px 15px;}
+.stat-label{font-size:10px;color:#999;margin-bottom:4px;}
+.stat-val{font-size:22px;font-weight:600;}
+.stat-hint{font-size:10px;color:#888;margin-top:2px;}
+.table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;border:1px solid #e8e8e4;}
+.table th{text-align:left;padding:9px 12px;font-size:11px;font-weight:500;color:#999;border-bottom:1px solid #e8e8e4;background:#F9F9F7;}
+.table td{padding:9px 12px;border-bottom:1px solid #e8e8e4;font-size:12px;vertical-align:middle;}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:#FAFAFA;}
+.card{background:#fff;border:1px solid #e8e8e4;border-radius:10px;padding:16px;}
+.card-title{font-size:13px;font-weight:600;margin-bottom:12px;}
+.filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.filters select,.filters input{width:auto;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:12px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);}
+.modal-lg{width:580px;}
+.modal-header{padding:16px 20px;border-bottom:1px solid #e8e8e4;display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:14px;font-weight:600;}
+.modal-close{background:none;border:none;font-size:20px;color:#999;cursor:pointer;padding:0;}
+.modal-body{padding:18px 20px;}
+.modal-footer{padding:12px 20px;border-top:1px solid #e8e8e4;display:flex;justify-content:flex-end;gap:8px;}
+.form-row{margin-bottom:12px;}
+.form-label{font-size:11px;color:#666;margin-bottom:4px;display:block;font-weight:500;}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;color:#999;font-size:13px;}
+.empty{text-align:center;padding:48px;color:#999;font-size:12px;}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:12px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
+.progress{height:5px;background:#e8e8e4;border-radius:3px;}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s;}
+.cat-section{margin-bottom:18px;}
+.cat-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border:1px solid #e8e8e4;border-radius:10px;margin-bottom:8px;}
+.cat-title{font-size:13px;font-weight:500;flex:1;}
+.report-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #e8e8e4;font-size:11px;}
+.report-row:last-child{border-bottom:none;}
+.report-name{flex:1;}
+.bar-wrap{width:80px;height:4px;background:#e8e8e4;border-radius:2px;}
+.bar-fill{height:100%;border-radius:2px;}
+.report-val{min-width:48px;text-align:right;color:#666;}
+.pipeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;}
+.pipe-col{background:#F9F9F7;border-radius:10px;padding:10px;}
+.pipe-header{font-size:11px;font-weight:500;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.pipe-count{font-size:10px;background:#fff;padding:1px 6px;border-radius:8px;color:#666;}
+.lead-card{background:#fff;border:1px solid #e8e8e4;border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;}
+.lead-card:hover{border-color:#2563eb;}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+.notif{position:relative;cursor:pointer;padding:6px 8px;border-radius:7px;border:1px solid #e8e8e4;font-size:14px;}
+.notif-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#dc2626;}
+/* Login */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f5f5f0;}
+.login-card{background:#fff;border-radius:14px;padding:40px;width:380px;border:1px solid #e8e8e4;}
+.login-logo{font-size:22px;font-weight:700;margin-bottom:4px;}
+.login-sub{font-size:12px;color:#999;margin-bottom:28px;}
+.login-card .form-row input{padding:10px 12px;font-size:13px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">Acumen OS</div>
+    <div class="login-sub">CFO Services Platform — Sign in to continue</div>
+    <div class="form-row"><label class="form-label">Your Name</label><input id="login-name" placeholder="e.g. Ahmed Rashid"></div>
+    <div class="form-row"><label class="form-label">Office</label>
+      <select id="login-office"><option>Dubai</option><option>Calicut</option></select>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="primary" style="width:100%;padding:10px;" onclick="doLogin()">Enter Acumen OS</button>
+    </div>
+    <div style="margin-top:16px;font-size:11px;color:#bbb;text-align:center;">Acumen CFO Services · Dubai &amp; Calicut</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="app" style="display:none;">
+  <div class="sidebar">
+    <div class="logo"><div class="logo-name">Acumen OS</div><div class="logo-sub">CFO Services Platform</div></div>
+    <div class="nav">
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">&#9689; Dashboard</div>
+      <div class="nav-section">Modules</div>
+      <div class="nav-item" onclick="showPage('tasks',this)">&#10003; Task Manager <span class="nav-badge" id="nb-tasks"></span></div>
+      <div class="nav-item" onclick="showPage('crm',this)">&#9734; CRM <span class="nav-badge" id="nb-leads"></span></div>
+      <div class="nav-item" onclick="showPage('meetings',this)">&#128197; Meetings</div>
+      <div class="nav-item" onclick="showPage('hr',this)">&#128101; HR</div>
+      <div class="nav-item" onclick="showPage('credentials',this)">&#128274; Credentials</div>
+      <div class="nav-item" onclick="showPage('todos',this)">&#128203; To-Do <span class="nav-badge" id="nb-todos"></span></div>
+      <div class="nav-section">Masters</div>
+      <div class="nav-item" onclick="showPage('clients',this)">&#127970; Clients</div>
+      <div class="nav-item" onclick="showPage('employees',this)">&#128100; Employees</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="notif" id="notif-btn" onclick="showPage('todos',document.querySelectorAll('.nav-item')[6])">&#128276;<div class="notif-dot" id="notif-dot" style="display:none;"></div></div>
+        <div class="user-chip"><div class="user-av" id="user-av">?</div><span id="user-label">Loading...</span></div>
+        <button onclick="doLogout()" style="font-size:11px;padding:4px 10px;">Sign out</button>
+      </div>
+    </div>
+
+    <!-- PAGES -->
+    <div id="page-dashboard" class="content"></div>
+    <div id="page-tasks" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="tabs">
+        <div class="tab active" onclick="taskTab('overview',this)">Overview</div>
+        <div class="tab" onclick="taskTab('list',this)">All Tasks</div>
+        <div class="tab" onclick="taskTab('tickets',this)">Tickets <span class="nav-badge" id="tb-tickets" style="font-size:9px;margin-left:4px;"></span></div>
+        <div class="tab" onclick="taskTab('reports',this)">Reports</div>
+      </div>
+      <div class="content" id="task-content"></div>
+    </div>
+    <div id="page-crm" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="tabs">
+        <div class="tab active" onclick="crmTab('pipeline',this)">Pipeline</div>
+        <div class="tab" onclick="crmTab('leads',this)">All Leads</div>
+        <div class="tab" onclick="crmTab('followups',this)">Follow-ups</div>
+        <div class="tab" onclick="crmTab('clients-crm',this)">Active Clients</div>
+      </div>
+      <div class="content" id="crm-content"></div>
+    </div>
+    <div id="page-meetings" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="tabs">
+        <div class="tab active" onclick="meetTab('list',this)">All Meetings</div>
+        <div class="tab" onclick="meetTab('notes',this)">Meeting Notes</div>
+      </div>
+      <div class="content" id="meet-content"></div>
+    </div>
+    <div id="page-hr" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="tabs">
+        <div class="tab active" onclick="hrTab('staff',this)">Employees</div>
+        <div class="tab" onclick="hrTab('leaves',this)">Leaves</div>
+        <div class="tab" onclick="hrTab('docs',this)">Documents</div>
+      </div>
+      <div class="content" id="hr-content"></div>
+    </div>
+    <div id="page-credentials" class="content" style="display:none;"></div>
+    <div id="page-todos" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="tabs">
+        <div class="tab active" onclick="todoTab('todos',this)">To-Do List</div>
+        <div class="tab" onclick="todoTab('reminders',this)">Reminders</div>
+      </div>
+      <div class="content" id="todo-content"></div>
+    </div>
+    <div id="page-clients" class="content" style="display:none;"></div>
+    <div id="page-employees" class="content" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div id="modal-task" class="modal-overlay"><div class="modal modal-lg">
+  <div class="modal-header"><div class="modal-title" id="mt-title">Add Task</div><button class="modal-close" onclick="closeModal('modal-task')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label class="form-label">Task Name *</label><input id="mt-name" placeholder="e.g. VAT Return Filing"></div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Client *</label><select id="mt-client" onchange="loadTaskCats()"><option value="">Select...</option></select></div>
+      <div class="form-row"><label class="form-label">Category *</label><select id="mt-cat"><option value="">Select...</option></select></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Assigned To *</label><select id="mt-staff"><option value="">Select...</option></select></div>
+      <div class="form-row"><label class="form-label">Frequency *</label><select id="mt-freq"><option value="">Select...</option><option>Monthly</option><option>Quarterly</option><option>Half-Yearly</option><option>Yearly</option><option>One-Time</option></select></div>
+    </div>
+    <div class="form-3col">
+      <div class="form-row"><label class="form-label">Allocated Hours</label><input id="mt-hours" type="number" min="0.5" step="0.5"></div>
+      <div class="form-row"><label class="form-label">Due Date *</label><input id="mt-due" type="date"></div>
+      <div class="form-row"><label class="form-label">Status</label><select id="mt-status"><option>Pending</option><option>In Progress</option><option>Done</option></select></div>
+    </div>
+    <div class="form-row"><label class="form-label">Notes</label><textarea id="mt-notes" rows="2"></textarea></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-task')">Cancel</button><button class="primary" onclick="saveTask()">Save Task</button></div>
+</div></div>
+
+<div id="modal-ticket" class="modal-overlay"><div class="modal">
+  <div class="modal-header"><div class="modal-title">Raise Ticket</div><button class="modal-close" onclick="closeModal('modal-ticket')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label class="form-label">Title *</label><input id="tk-title" placeholder="What do you need?"></div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">From</label><select id="tk-from"><option value="">Select...</option></select></div>
+      <div class="form-row"><label class="form-label">To *</label><select id="tk-to"><option value="">Select...</option></select></div>
+    </div>
+    <div class="form-row"><label class="form-label">Priority</label><select id="tk-pri"><option>Normal</option><option>Urgent</option><option>Low</option></select></div>
+    <div class="form-row"><label class="form-label">Description *</label><textarea id="tk-desc" rows="3"></textarea></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-ticket')">Cancel</button><button class="primary" onclick="saveTicket()">Send</button></div>
+</div></div>
+
+<div id="modal-lead" class="modal-overlay"><div class="modal modal-lg">
+  <div class="modal-header"><div class="modal-title" id="ml-title">Add Lead</div><button class="modal-close" onclick="closeModal('modal-lead')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Name *</label><input id="ml-name"></div>
+      <div class="form-row"><label class="form-label">Company</label><input id="ml-company"></div>
+    </div>
+    <div class="form-3col">
+      <div class="form-row"><label class="form-label">Phone</label><input id="ml-phone"></div>
+      <div class="form-row"><label class="form-label">Email</label><input id="ml-email"></div>
+      <div class="form-row"><label class="form-label">WhatsApp</label><input id="ml-wa"></div>
+    </div>
+    <div class="form-3col">
+      <div class="form-row"><label class="form-label">Service *</label><select id="ml-service"><option value="">Select...</option><option>CFO Services</option><option>VAT</option><option>Audit</option><option>Corporate Tax</option><option>Multiple</option></select></div>
+      <div class="form-row"><label class="form-label">Stage</label><select id="ml-stage"><option>New</option><option>Contacted</option><option>Proposal Sent</option><option>Negotiation</option><option>Won</option><option>Lost</option></select></div>
+      <div class="form-row"><label class="form-label">Temperature</label><select id="ml-temp"><option>Warm</option><option>Hot</option><option>Cold</option></select></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Assigned To</label><select id="ml-assigned"><option value="">Select...</option></select></div>
+      <div class="form-row"><label class="form-label">Source</label><select id="ml-source"><option>Referral</option><option>Walk-in</option><option>LinkedIn</option><option>Website</option><option>Cold Call</option><option>Other</option></select></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Expected Value (AED/yr)</label><input id="ml-value" type="number"></div>
+      <div class="form-row"><label class="form-label">Next Follow-up</label><input id="ml-nextfu" type="date"></div>
+    </div>
+    <div class="form-row"><label class="form-label">Notes</label><textarea id="ml-notes" rows="2"></textarea></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-lead')">Cancel</button><button class="primary" onclick="saveLead()">Save</button></div>
+</div></div>
+
+<div id="modal-meeting" class="modal-overlay"><div class="modal modal-lg">
+  <div class="modal-header"><div class="modal-title" id="mm-title">Schedule Meeting</div><button class="modal-close" onclick="closeModal('modal-meeting')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label class="form-label">Type *</label><select id="mm-type"><option value="">Select...</option><option>New Client Meeting</option><option>Monthly MIS Review</option><option>VAT Discussion</option><option>Audit Review</option><option>CT Review</option><option>Internal Meeting</option><option>Other</option></select></div>
+    <div class="form-row"><label class="form-label">Client / With *</label><select id="mm-client"><option value="">Select...</option></select></div>
+    <div class="form-3col">
+      <div class="form-row"><label class="form-label">Date *</label><input id="mm-date" type="date"></div>
+      <div class="form-row"><label class="form-label">Time *</label><input id="mm-time" type="time"></div>
+      <div class="form-row"><label class="form-label">Duration</label><select id="mm-dur"><option>30 min</option><option>45 min</option><option selected>1 hour</option><option>1.5 hours</option><option>2 hours</option></select></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Mode</label><select id="mm-mode"><option>On-site</option><option>Virtual</option><option>Call</option></select></div>
+      <div class="form-row"><label class="form-label">Location / Link</label><input id="mm-loc"></div>
+    </div>
+    <div class="form-row"><label class="form-label">Agenda</label><textarea id="mm-agenda" rows="2"></textarea></div>
+    <div class="form-row"><label class="form-label">Status</label><select id="mm-status"><option>Scheduled</option><option>Completed</option><option>Cancelled</option></select></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-meeting')">Cancel</button><button class="primary" onclick="saveMeeting()">Save</button></div>
+</div></div>
+
+<div id="modal-leave" class="modal-overlay"><div class="modal">
+  <div class="modal-header"><div class="modal-title">Apply Leave</div><button class="modal-close" onclick="closeModal('modal-leave')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label class="form-label">Employee *</label><select id="lv-emp"><option value="">Select...</option></select></div>
+    <div class="form-row"><label class="form-label">Type</label><select id="lv-type"><option>Annual Leave</option><option>Sick Leave</option><option>Emergency Leave</option><option>Unpaid Leave</option></select></div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">From *</label><input id="lv-from" type="date"></div>
+      <div class="form-row"><label class="form-label">To *</label><input id="lv-to" type="date"></div>
+    </div>
+    <div class="form-row"><label class="form-label">Reason</label><textarea id="lv-reason" rows="2"></textarea></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-leave')">Cancel</button><button class="primary" onclick="saveLeave()">Submit</button></div>
+</div></div>
+
+<div id="modal-doc" class="modal-overlay"><div class="modal">
+  <div class="modal-header"><div class="modal-title">Upload Document</div><button class="modal-close" onclick="closeModal('modal-doc')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label class="form-label">Employee *</label><select id="dc-emp"><option value="">Select...</option></select></div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Type</label><select id="dc-type"><option>Passport</option><option>Visa</option><option>Emirates ID</option><option>Labour Card</option><option>Contract</option><option>Certificate</option><option>Other</option></select></div>
+      <div class="form-row"><label class="form-label">Name *</label><input id="dc-name" placeholder="e.g. Passport Copy"></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Upload Date</label><input id="dc-upl" type="date"></div>
+      <div class="form-row"><label class="form-label">Expiry Date</label><input id="dc-exp" type="date"></div>
+    </div>
+    <div class="form-row"><label class="form-label">Notes</label><textarea id="dc-notes" rows="2"></textarea></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-doc')">Cancel</button><button class="primary" onclick="saveDoc()">Save</button></div>
+</div></div>
+
+<div id="modal-cred" class="modal-overlay"><div class="modal modal-lg">
+  <div class="modal-header"><div class="modal-title" id="mc-title">Add Credential</div><button class="modal-close" onclick="closeModal('modal-cred')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Client *</label><select id="mc-client"><option value="">Select...</option></select></div>
+      <div class="form-row"><label class="form-label">Category *</label><select id="mc-cat"><option>FTA / VAT Portal</option><option>Corporate Tax Portal</option><option>Accounting Software</option><option>Banking</option><option>Government Portal</option><option>Other</option></select></div>
+    </div>
+    <div class="form-row"><label class="form-label">Portal / System Name *</label><input id="mc-name" placeholder="e.g. FTA e-Services Portal"></div>
+    <div class="form-row"><label class="form-label">URL</label><input id="mc-url" placeholder="https://..."></div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Username / TRN</label><input id="mc-user"></div>
+      <div class="form-row"><label class="form-label">Password</label><input id="mc-pass" type="password"></div>
+    </div>
+    <div class="form-row"><label class="form-label">PIN / Notes</label><input id="mc-pin" placeholder="PIN or security code"></div>
+    <div class="form-row"><label class="form-label">Additional Notes</label><textarea id="mc-notes" rows="2"></textarea></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-cred')">Cancel</button><button class="primary" onclick="saveCred()">Save</button></div>
+</div></div>
+
+<div id="modal-todo" class="modal-overlay"><div class="modal">
+  <div class="modal-header"><div class="modal-title">Add To-Do</div><button class="modal-close" onclick="closeModal('modal-todo')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label class="form-label">Task *</label><input id="td-title" placeholder="What needs to be done?"></div>
+    <div class="form-row"><label class="form-label">Assigned To *</label><select id="td-staff"><option value="">Select...</option></select></div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Due Date</label><input id="td-date" type="date"></div>
+      <div class="form-row"><label class="form-label">Priority</label><select id="td-pri"><option>Medium</option><option>High</option><option>Low</option></select></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-todo')">Cancel</button><button class="primary" onclick="saveTodo()">Save</button></div>
+</div></div>
+
+<div id="modal-client" class="modal-overlay"><div class="modal modal-lg">
+  <div class="modal-header"><div class="modal-title" id="mcl-title">Add Client</div><button class="modal-close" onclick="closeModal('modal-client')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Company Name *</label><input id="cl-name"></div>
+      <div class="form-row"><label class="form-label">Contact Person</label><input id="cl-contact"></div>
+    </div>
+    <div class="form-3col">
+      <div class="form-row"><label class="form-label">Email</label><input id="cl-email"></div>
+      <div class="form-row"><label class="form-label">Phone</label><input id="cl-phone"></div>
+      <div class="form-row"><label class="form-label">Status</label><select id="cl-status"><option>Active</option><option>Inactive</option></select></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Relationship Owner</label><select id="cl-owner"><option value="">Select...</option></select></div>
+      <div class="form-row"><label class="form-label">Client Since</label><input id="cl-since" type="date"></div>
+    </div>
+    <div class="form-row"><label class="form-label">Notes</label><textarea id="cl-notes" rows="2"></textarea></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-client')">Cancel</button><button class="primary" onclick="saveClient()">Save</button></div>
+</div></div>
+
+<div id="modal-emp" class="modal-overlay"><div class="modal modal-lg">
+  <div class="modal-header"><div class="modal-title" id="me-title">Add Employee</div><button class="modal-close" onclick="closeModal('modal-emp')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Full Name *</label><input id="em-name"></div>
+      <div class="form-row"><label class="form-label">Job Title *</label><input id="em-role"></div>
+    </div>
+    <div class="form-3col">
+      <div class="form-row"><label class="form-label">Office *</label><select id="em-office"><option>Dubai</option><option>Calicut</option></select></div>
+      <div class="form-row"><label class="form-label">Department</label><select id="em-dept"><option>Accounts</option><option>VAT</option><option>Audit</option><option>CFO Services</option><option>Admin</option></select></div>
+      <div class="form-row"><label class="form-label">Status</label><select id="em-status"><option>Active</option><option>Inactive</option></select></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Email</label><input id="em-email"></div>
+      <div class="form-row"><label class="form-label">Phone</label><input id="em-phone"></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Join Date</label><input id="em-join" type="date"></div>
+      <div class="form-row"><label class="form-label">Annual Leave Balance</label><input id="em-leave" type="number" value="30"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-emp')">Cancel</button><button class="primary" onclick="saveEmployee()">Save</button></div>
+</div></div>
+
+<div id="modal-status" class="modal-overlay"><div class="modal" style="width:360px;">
+  <div class="modal-header"><div class="modal-title">Update Task</div><button class="modal-close" onclick="closeModal('modal-status')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row"><div id="su-name" style="font-size:12px;font-weight:500;padding:4px 0;"></div></div>
+    <div class="form-row"><label class="form-label">Status</label><select id="su-status"><option>Pending</option><option>In Progress</option><option>Done</option><option>Overdue</option></select></div>
+    <div class="form-row"><label class="form-label">Actual Hours Spent</label><input id="su-hours" type="number" step="0.5"></div>
+    <div class="form-row"><label class="form-label">Comment</label><textarea id="su-comment" rows="2"></textarea></div>
+  </div>
+  <div class="modal-footer"><button onclick="closeModal('modal-status')">Cancel</button><button class="primary" onclick="updateTaskStatus()">Update</button></div>
+</div></div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://bgxnmxughmplkajijoqx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJneG5teHVnaG1wbGthamlqb3FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODI0MDMsImV4cCI6MjA1OTI1ODQwM30.s3u_EXGMkHDDHCNo-C3kjGjJFCHAf3hDMYGqcDpheRE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ALL_CATS = ['MIS','VAT','Audit','CT','FOV','Payroll','Bookkeeping','Custom'];
+const CAT_PILL = {MIS:'p-mis',VAT:'p-vat',Audit:'p-audit',CT:'p-ct',FOV:'p-fov',Payroll:'p-payroll',Bookkeeping:'p-bookkeeping',Custom:'p-custom'};
+const CAT_COLOR = {MIS:'#2563eb',VAT:'#6d28d9',Audit:'#065f46',CT:'#92400e',FOV:'#9f1239',Payroll:'#14532d',Bookkeeping:'#1e40af',Custom:'#4b5563'};
+const FREQ_PILL = {Monthly:'p-monthly',Quarterly:'p-quarterly','Half-Yearly':'p-halfyearly',Yearly:'p-yearly','One-Time':'p-onetime'};
+const STATUS_PILL = {Done:'p-done',Pending:'p-pending',Overdue:'p-overdue','In Progress':'p-inprogress'};
+const STAGE_PILL = {New:'p-new',Contacted:'p-contacted','Proposal Sent':'p-proposal',Negotiation:'p-negotiation',Won:'p-won',Lost:'p-lost'};
+
+let currentUser = null;
+let editIds = {};
+let statusEditId = null;
+let credRevealed = {};
+
+// AUTH
+function doLogin(){
+  const name = document.getElementById('login-name').value.trim();
+  const office = document.getElementById('login-office').value;
+  if(!name){alert('Please enter your name.');return;}
+  currentUser = {name, office};
+  localStorage.setItem('acumen_user', JSON.stringify(currentUser));
+  startApp();
+}
+function doLogout(){
+  localStorage.removeItem('acumen_user');
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+async function startApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('user-label').textContent = currentUser.name + ' · ' + currentUser.office;
+  document.getElementById('user-av').textContent = currentUser.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  await Promise.all([populateClientSelects(), populateStaffSelects()]);
+  loadDashboard();
+  loadBadges();
+}
+
+// PAGE ROUTING
+function showPage(page, el){
+  document.querySelectorAll('[id^=page-]').forEach(p=>{p.style.display='none';});
+  const pg = document.getElementById('page-'+page);
+  if(pg){
+    pg.style.display = pg.classList.contains('content') ? 'block' : 'flex';
+    pg.style.flexDirection = 'column';
+    pg.style.flex = '1';
+    pg.style.overflow = 'hidden';
+  }
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('page-title').textContent = {
+    dashboard:'Dashboard',tasks:'Task Manager',crm:'CRM',meetings:'Meeting Scheduler',
+    hr:'HR Management',credentials:'Credential Store',todos:'To-Do & Reminders',
+    clients:'Client Master',employees:'Employee Master'
+  }[page]||page;
+  const loaders = {
+    tasks:()=>taskTab('overview',document.querySelector('#page-tasks .tab')),
+    crm:()=>crmTab('pipeline',document.querySelector('#page-crm .tab')),
+    meetings:()=>meetTab('list',document.querySelector('#page-meetings .tab')),
+    hr:()=>hrTab('staff',document.querySelector('#page-hr .tab')),
+    credentials:loadCredentials,
+    todos:()=>todoTab('todos',document.querySelector('#page-todos .tab')),
+    clients:loadClientsPage,
+    employees:loadEmployeesPage,
+    dashboard:loadDashboard
+  };
+  if(loaders[page]) loaders[page]();
+}
+
+// TOAST
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// MODAL
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+window.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('open');});
+
+// PILL HELPER
+function pill(cls,text){return `<span class="pill ${cls}">${text}</span>`;}
+
+// INIT SELECTS WITH DB DATA
+async function loadBadges(){
+  try{
+    const [tasks,leads,todos] = await Promise.all([
+      sb.from('tasks').select('status'),
+      sb.from('leads').select('stage'),
+      sb.from('todos').select('done,due_date')
+    ]);
+    const overdue = (tasks.data||[]).filter(t=>t.status==='Overdue').length;
+    const newLeads = (leads.data||[]).filter(l=>l.stage==='New').length;
+    const td = new Date().toISOString().slice(0,10);
+    const pendTodos = (todos.data||[]).filter(t=>!t.done&&t.due_date<=td).length;
+    document.getElementById('nb-tasks').textContent = overdue||'';
+    document.getElementById('nb-leads').textContent = newLeads||'';
+    document.getElementById('nb-todos').textContent = pendTodos||'';
+    document.getElementById('tb-tickets').textContent = '';
+    if(pendTodos>0) document.getElementById('notif-dot').style.display='block';
+  }catch(e){}
+}
+
+async function populateStaffSelects(){
+  const {data} = await sb.from('employees').select('name,office').eq('status','Active').order('name');
+  const staff = data||[];
+  ['mt-staff','tk-from','tk-to','ml-assigned','td-staff','cl-owner'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const keep=el.options[0];el.innerHTML='';el.appendChild(keep);
+    staff.forEach(s=>{const o=document.createElement('option');o.value=s.name;o.text=`${s.name} (${s.office||''})`;el.appendChild(o);});
+  });
+  ['lv-emp','dc-emp'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const keep=el.options[0];el.innerHTML='';el.appendChild(keep);
+    staff.forEach(s=>{const o=document.createElement('option');o.value=s.id||s.name;o.text=s.name;el.appendChild(o);});
+  });
+}
+
+async function populateClientSelects(){
+  const {data} = await sb.from('clients').select('name').eq('status','Active').order('name');
+  const clients = data||[];
+  ['mt-client','ml-client','mm-client','mc-client'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const keep=el.options[0];el.innerHTML='';el.appendChild(keep);
+    clients.forEach(c=>{const o=document.createElement('option');o.value=c.name;o.text=c.name;el.appendChild(o);});
+  });
+}
+
+// DASHBOARD
+async function loadDashboard(){
+  const el = document.getElementById('page-dashboard');
+  el.innerHTML = '<div class="loading">Loading dashboard...</div>';
+  try{
+    const [tasks,leads,meetings,employees] = await Promise.all([
+      sb.from('tasks').select('status,category,allocated_hours,actual_hours'),
+      sb.from('leads').select('stage,temperature'),
+      sb.from('meetings').select('status,meeting_date').eq('status','Scheduled'),
+      sb.from('employees').select('office').eq('status','Active')
+    ]);
+    const td = tasks.data||[]; const ld = leads.data||[]; const md = meetings.data||[]; const ed = employees.data||[];
+    const today = new Date().toISOString().slice(0,10);
+    const todayM = md.filter(m=>m.meeting_date===today).length;
+    el.innerHTML = `
+      <div class="stat-row" style="grid-template-columns:repeat(5,minmax(0,1fr));">
+        <div class="stat"><div class="stat-label">Total Tasks</div><div class="stat-val">${td.length}</div><div class="stat-hint">${td.filter(t=>t.status==='Done').length} completed</div></div>
+        <div class="stat"><div class="stat-label">Overdue Tasks</div><div class="stat-val" style="color:#dc2626;">${td.filter(t=>t.status==='Overdue').length}</div><div class="stat-hint">Need attention</div></div>
+        <div class="stat"><div class="stat-label">Active Leads</div><div class="stat-val" style="color:#2563eb;">${ld.filter(l=>l.stage!=='Won'&&l.stage!=='Lost').length}</div><div class="stat-hint">${ld.filter(l=>l.temperature==='Hot').length} hot</div></div>
+        <div class="stat"><div class="stat-label">Meetings Today</div><div class="stat-val" style="color:#065f46;">${todayM}</div><div class="stat-hint">Scheduled</div></div>
+        <div class="stat"><div class="stat-label">Team Size</div><div class="stat-val">${ed.length}</div><div class="stat-hint">${ed.filter(e=>e.office==='Dubai').length} Dubai · ${ed.filter(e=>e.office==='Calicut').length} Calicut</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px;">
+        <div class="card">
+          <div class="card-title">Tasks by Category</div>
+          ${(() => {
+            const cats = {};
+            td.forEach(t=>{if(!cats[t.category])cats[t.category]={total:0,done:0};cats[t.category].total++;if(t.status==='Done')cats[t.category].done++;});
+            return Object.entries(cats).map(([c,v])=>`
+              <div class="report-row">
+                <div class="report-name">${pill(CAT_PILL[c]||'p-custom',c)}</div>
+                <div class="bar-wrap"><div class="bar-fill" style="width:${v.total?Math.round(v.done/v.total*100):0}%;background:${CAT_COLOR[c]||'#666'};"></div></div>
+                <div class="report-val">${v.done}/${v.total}</div>
+              </div>`).join('') || '<div class="empty">No tasks yet</div>';
+          })()}
+        </div>
+        <div class="card">
+          <div class="card-title">Lead Pipeline</div>
+          ${(() => {
+            const stages = ['New','Contacted','Proposal Sent','Negotiation','Won'];
+            return stages.map(s=>{
+              const c = ld.filter(l=>l.stage===s).length;
+              return `<div class="report-row"><div class="report-name">${pill(STAGE_PILL[s]||'',s)}</div><div class="bar-wrap"><div class="bar-fill" style="width:${ld.length?Math.round(c/ld.length*100):0}%;background:#2563eb;"></div></div><div class="report-val">${c}</div></div>`;
+            }).join('');
+          })()}
+        </div>
+      </div>`;
+  }catch(e){el.innerHTML=`<div class="empty">Error loading dashboard: ${e.message}</div>`;}
+}
+
+// ===== TASK MANAGER =====
+let taskCurrentTab = 'overview';
+async function taskTab(tab, el){
+  taskCurrentTab = tab;
+  document.querySelectorAll('#page-tasks .tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const c = document.getElementById('task-content');
+  c.innerHTML = '<div class="loading">Loading...</div>';
+  if(tab==='overview') await renderTaskOverview(c);
+  else if(tab==='list') await renderTaskList(c);
+  else if(tab==='tickets') await renderTickets(c);
+  else if(tab==='reports') await renderTaskReports(c);
+}
+
+async function renderTaskOverview(c){
+  const [{data:tasks},{data:clients}] = await Promise.all([
+    sb.from('tasks').select('*').order('due_date'),
+    sb.from('clients').select('name').eq('status','Active').order('name')
+  ]);
+  const td = tasks||[]; const cl = clients||[];
+  const cats = {};
+  td.forEach(t=>{if(!cats[t.category])cats[t.category]={tasks:[],done:0,hours:0,actual:0};cats[t.category].tasks.push(t);if(t.status==='Done')cats[t.category].done++;cats[t.category].hours+=Number(t.allocated_hours)||0;cats[t.category].actual+=Number(t.actual_hours)||0;});
+  const filterOpts = cl.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  c.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="stat-row" style="flex:1;margin-bottom:0;margin-right:16px;">
+        <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${td.length}</div></div>
+        <div class="stat"><div class="stat-label">Done</div><div class="stat-val" style="color:#16a34a;">${td.filter(t=>t.status==='Done').length}</div></div>
+        <div class="stat"><div class="stat-label">Pending</div><div class="stat-val" style="color:#d97706;">${td.filter(t=>t.status==='Pending'||t.status==='In Progress').length}</div></div>
+        <div class="stat"><div class="stat-label">Overdue</div><div class="stat-val" style="color:#dc2626;">${td.filter(t=>t.status==='Overdue').length}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <select onchange="filterTaskOverview(this.value)" style="width:180px;"><option value="">All Clients</option>${filterOpts}</select>
+        <button class="primary" onclick="openAddTask()">+ Add Task</button>
+      </div>
+    </div>
+    <div id="cat-sections">
+      ${Object.entries(cats).map(([cat,data])=>{
+        const pct = data.tasks.length?Math.round(data.done/data.tasks.length*100):0;
+        return `<div class="cat-section">
+          <div class="cat-header">
+            ${pill(CAT_PILL[cat]||'p-custom',cat)}
+            <div class="cat-title">${cat}</div>
+            <span style="font-size:11px;color:#888;">${data.done}/${data.tasks.length} done &nbsp;·&nbsp; ${data.hours}h alloc &nbsp;·&nbsp; ${data.actual}h spent</span>
+            <div class="progress" style="width:100px;"><div class="progress-fill" style="width:${pct}%;background:${CAT_COLOR[cat]||'#2563eb'};"></div></div>
+            <span style="font-size:11px;color:#888;min-width:30px;">${pct}%</span>
+          </div>
+          <table class="table" style="margin-bottom:4px;">
+            <thead><tr><th>Task</th><th>Client</th><th>Assigned To</th><th>Freq</th><th>Hours</th><th>Due</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              ${data.tasks.map(t=>`<tr>
+                <td><div style="font-weight:500;">${t.name}</div>${t.notes?`<div style="font-size:10px;color:#999;">${t.notes}</div>`:''}</td>
+                <td style="font-size:11px;">${t.client_name||''}</td>
+                <td style="font-size:11px;">${t.assigned_to||''}</td>
+                <td>${pill(FREQ_PILL[t.frequency]||'',t.frequency||'')}</td>
+                <td style="font-size:11px;">${t.allocated_hours||0}h${t.actual_hours?`<br><span style="color:#999;font-size:10px;">${t.actual_hours}h spent</span>`:''}</td>
+                <td style="font-size:11px;">${t.due_date||''}</td>
+                <td>${pill(STATUS_PILL[t.status]||'',t.status||'')}</td>
+                <td><button style="font-size:10px;padding:3px 7px;" onclick="openStatusModal('${t.id}','${t.name}','${t.status}',${t.actual_hours||0})">Update</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      }).join('') || '<div class="empty">No tasks yet. Add your first task!</div>'}
+    </div>`;
+}
+
+async function filterTaskOverview(clientName){
+  const c = document.getElementById('task-content');
+  const {data:tasks} = await sb.from('tasks').select('*').order('due_date').then(r=>{
+    if(clientName) return sb.from('tasks').select('*').eq('client_name',clientName).order('due_date');
+    return r;
+  });
+  // re-render just cat sections
+  await renderTaskOverview(c);
+}
+
+async function renderTaskList(c){
+  const [{data:tasks},{data:clients}] = await Promise.all([
+    sb.from('tasks').select('*').order('due_date'),
+    sb.from('clients').select('name').eq('status','Active').order('name')
+  ]);
+  const td = tasks||[];
+  const clientOpts = (clients||[]).map(c=>`<option>${c.name}</option>`).join('');
+  const catOpts = ALL_CATS.map(c=>`<option>${c}</option>`).join('');
+  c.innerHTML = `
+    <div class="filters">
+      <select id="fl-client" onchange="filterTasks()"><option value="">All Clients</option>${clientOpts}</select>
+      <select id="fl-cat" onchange="filterTasks()"><option value="">All Categories</option>${catOpts}</select>
+      <select id="fl-status" onchange="filterTasks()"><option value="">All Status</option><option>Pending</option><option>In Progress</option><option>Done</option><option>Overdue</option></select>
+      <input id="fl-search" placeholder="Search..." oninput="filterTasks()" style="width:160px;">
+      <button class="primary" onclick="openAddTask()">+ Add Task</button>
+    </div>
+    <table class="table" id="task-table">
+      <thead><tr><th>Task</th><th>Client</th><th>Category</th><th>Assigned To</th><th>Freq</th><th>Hours</th><th>Due</th><th>Status</th><th></th></tr></thead>
+      <tbody id="task-tbody">${renderTaskRows(td)}</tbody>
+    </table>`;
+}
+
+function renderTaskRows(td){
+  if(!td.length) return `<tr><td colspan="9" class="empty">No tasks found.</td></tr>`;
+  return td.map(t=>`<tr>
+    <td><div style="font-weight:500;">${t.name}</div></td>
+    <td style="font-size:11px;">${t.client_name||''}</td>
+    <td>${pill(CAT_PILL[t.category]||'p-custom',t.category||'')}</td>
+    <td style="font-size:11px;">${t.assigned_to||''}</td>
+    <td>${pill(FREQ_PILL[t.frequency]||'',t.frequency||'')}</td>
+    <td style="font-size:11px;">${t.allocated_hours||0}h</td>
+    <td style="font-size:11px;">${t.due_date||''}</td>
+    <td>${pill(STATUS_PILL[t.status]||'',t.status||'')}</td>
+    <td><button style="font-size:10px;padding:3px 6px;" onclick="openStatusModal('${t.id}','${t.name}','${t.status}',${t.actual_hours||0})">Update</button></td>
+  </tr>`).join('');
+}
+
+async function filterTasks(){
+  const fc = document.getElementById('fl-client')?.value;
+  const fcat = document.getElementById('fl-cat')?.value;
+  const fst = document.getElementById('fl-status')?.value;
+  const fq = document.getElementById('fl-search')?.value?.toLowerCase();
+  let q = sb.from('tasks').select('*').order('due_date');
+  if(fc) q = q.eq('client_name',fc);
+  if(fcat) q = q.eq('category',fcat);
+  if(fst) q = q.eq('status',fst);
+  const {data} = await q;
+  let filtered = data||[];
+  if(fq) filtered = filtered.filter(t=>t.name.toLowerCase().includes(fq)||((t.client_name||'').toLowerCase().includes(fq)));
+  document.getElementById('task-tbody').innerHTML = renderTaskRows(filtered);
+}
+
+async function renderTickets(c){
+  const {data} = await sb.from('tickets').select('*').order('created_at',{ascending:false});
+  const td = data||[];
+  c.innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Internal Tickets</div>
+      <button class="primary" onclick="openModal('modal-ticket')">+ New Ticket</button>
+    </div>
+    ${td.length?td.map(t=>`
+      <div class="card" style="margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          ${pill(t.priority==='Urgent'?'p-overdue':t.priority==='Low'?'p-done':'p-inprogress',t.priority)}
+          <div style="font-weight:500;flex:1;">${t.title}</div>
+          ${pill(t.status==='Resolved'?'p-done':'p-pending',t.status)}
+        </div>
+        <div style="font-size:11px;color:#666;margin-bottom:6px;">${t.description||''}</div>
+        <div style="font-size:10px;color:#999;display:flex;gap:12px;flex-wrap:wrap;">
+          <span>From: ${t.from_staff||''}</span><span>To: <strong>${t.to_staff||''}</strong></span>
+          <span>${t.created_at?.slice(0,10)||''}</span>
+          ${t.status==='Open'?`<button style="font-size:10px;padding:2px 8px;margin-left:auto;" onclick="resolveTicket('${t.id}')">Mark Resolved</button>`:''}
+        </div>
+      </div>`).join(''):'<div class="empty">No tickets. Great teamwork!</div>'}`;
+}
+
+async function resolveTicket(id){
+  await sb.from('tickets').update({status:'Resolved'}).eq('id',id);
+  toast('Ticket resolved');
+  taskTab('tickets', null);
+}
+
+async function renderTaskReports(c){
+  const {data:tasks} = await sb.from('tasks').select('*');
+  const td = tasks||[];
+  const catMap={};const staffMap={};const clientMap={};
+  td.forEach(t=>{
+    if(!catMap[t.category])catMap[t.category]={total:0,done:0,hours:0,actual:0};
+    catMap[t.category].total++;if(t.status==='Done')catMap[t.category].done++;
+    catMap[t.category].hours+=Number(t.allocated_hours)||0;catMap[t.category].actual+=Number(t.actual_hours)||0;
+    if(!staffMap[t.assigned_to])staffMap[t.assigned_to]={};
+    if(!staffMap[t.assigned_to][t.category])staffMap[t.assigned_to][t.category]={done:0,total:0,hrs:0};
+    staffMap[t.assigned_to][t.category].total++;if(t.status==='Done')staffMap[t.assigned_to][t.category].done++;
+    staffMap[t.assigned_to][t.category].hrs+=Number(t.actual_hours)||0;
+    if(!clientMap[t.client_name])clientMap[t.client_name]={total:0,done:0,hours:0};
+    clientMap[t.client_name].total++;if(t.status==='Done')clientMap[t.client_name].done++;
+    clientMap[t.client_name].hours+=Number(t.allocated_hours)||0;
+  });
+  const cats = Object.keys(catMap);
+  c.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">Tasks by Category</div>
+        ${Object.entries(catMap).map(([cat,v])=>`
+          <div class="report-row">
+            <div class="report-name">${pill(CAT_PILL[cat]||'p-custom',cat)}</div>
+            <div class="bar-wrap"><div class="bar-fill" style="width:${v.total?Math.round(v.done/v.total*100):0}%;background:${CAT_COLOR[cat]||'#2563eb'};"></div></div>
+            <div class="report-val">${v.done}/${v.total} &nbsp; ${v.actual}/${v.hours}h</div>
+          </div>`).join('')||'<div class="empty">No data</div>'}
+      </div>
+      <div class="card">
+        <div class="card-title">Client Task Summary</div>
+        ${Object.entries(clientMap).slice(0,8).map(([cl,v])=>`
+          <div class="report-row">
+            <div class="report-name" style="font-size:11px;">${cl}</div>
+            <div class="bar-wrap"><div class="bar-fill" style="width:${v.total?Math.round(v.done/v.total*100):0}%;background:#2563eb;"></div></div>
+            <div class="report-val">${v.done}/${v.total} · ${v.hours}h</div>
+          </div>`).join('')||'<div class="empty">No data</div>'}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Staff Performance by Category</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;min-width:600px;">
+          <thead><tr>
+            <th style="text-align:left;padding:8px;font-size:11px;color:#999;border-bottom:1px solid #e8e8e4;">Staff</th>
+            ${cats.map(c=>`<th style="text-align:center;padding:6px;font-size:10px;color:#999;border-bottom:1px solid #e8e8e4;">${pill(CAT_PILL[c]||'p-custom',c)}</th>`).join('')}
+            <th style="text-align:center;padding:8px;font-size:11px;color:#999;border-bottom:1px solid #e8e8e4;">Total</th>
+          </tr></thead>
+          <tbody>
+            ${Object.entries(staffMap).map(([name,catData])=>{
+              const tot=Object.values(catData).reduce((a,v)=>a+v.total,0);
+              const dn=Object.values(catData).reduce((a,v)=>a+v.done,0);
+              return `<tr>
+                <td style="padding:8px;font-size:12px;font-weight:500;border-bottom:1px solid #e8e8e4;">${name}</td>
+                ${cats.map(cat=>{
+                  const d=catData[cat];
+                  if(!d)return`<td style="text-align:center;padding:8px;font-size:11px;color:#ccc;border-bottom:1px solid #e8e8e4;">—</td>`;
+                  const pct=Math.round(d.done/d.total*100);
+                  return`<td style="text-align:center;padding:8px;border-bottom:1px solid #e8e8e4;">
+                    <div style="font-size:11px;font-weight:500;">${d.done}/${d.total}</div>
+                    <div style="height:3px;background:#e8e8e4;border-radius:2px;margin:3px auto;width:36px;"><div style="height:100%;width:${pct}%;background:${CAT_COLOR[cat]||'#2563eb'};border-radius:2px;"></div></div>
+                    <div style="font-size:9px;color:#999;">${d.hrs}h</div>
+                  </td>`;
+                }).join('')}
+                <td style="text-align:center;padding:8px;font-weight:600;border-bottom:1px solid #e8e8e4;">${dn}/${tot}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// Task add/edit
+async function openAddTask(){
+  await Promise.all([populateClientSelects(), populateStaffSelects()]);
+  editIds.task = null;
+  document.getElementById('mt-title').textContent='Add Task';
+  ['mt-name','mt-hours','mt-due','mt-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mt-client').value='';
+  document.getElementById('mt-cat').innerHTML='<option value="">Select category...</option>';
+  document.getElementById('mt-staff').value='';
+  document.getElementById('mt-freq').value='';
+  document.getElementById('mt-status').value='Pending';
+  openModal('modal-task');
+}
+
+async function loadTaskCats(){
+  const client = document.getElementById('mt-client').value;
+  const el = document.getElementById('mt-cat');
+  el.innerHTML='<option value="">Select category...</option>';
+  if(!client){return;}
+  const {data} = await sb.from('client_services').select('category').eq('client_name',client);
+  const cats = data&&data.length ? data.map(d=>d.category) : ALL_CATS;
+  cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.text=c;el.appendChild(o);});
+}
+
+async function saveTask(){
+  const name=document.getElementById('mt-name').value.trim();
+  const client=document.getElementById('mt-client').value;
+  const cat=document.getElementById('mt-cat').value;
+  const staff=document.getElementById('mt-staff').value;
+  const freq=document.getElementById('mt-freq').value;
+  if(!name||!client||!cat||!staff||!freq){alert('Fill all required fields.');return;}
+  const obj={name,client_name:client,category:cat,assigned_to:staff,frequency:freq,
+    allocated_hours:parseFloat(document.getElementById('mt-hours').value)||0,
+    due_date:document.getElementById('mt-due').value,
+    status:document.getElementById('mt-status').value,
+    notes:document.getElementById('mt-notes').value};
+  if(editIds.task){await sb.from('tasks').update(obj).eq('id',editIds.task);}
+  else{await sb.from('tasks').insert(obj);}
+  closeModal('modal-task');toast('Task saved!');
+  taskTab(taskCurrentTab,null);loadBadges();
+}
+
+function openStatusModal(id,name,status,actual){
+  statusEditId=id;
+  document.getElementById('su-name').textContent=name;
+  document.getElementById('su-status').value=status;
+  document.getElementById('su-hours').value=actual||'';
+  document.getElementById('su-comment').value='';
+  openModal('modal-status');
+}
+
+async function updateTaskStatus(){
+  const status=document.getElementById('su-status').value;
+  const hours=parseFloat(document.getElementById('su-hours').value)||0;
+  await sb.from('tasks').update({status,actual_hours:hours}).eq('id',statusEditId);
+  closeModal('modal-status');toast('Task updated!');
+  taskTab(taskCurrentTab,null);loadBadges();
+}
+
+async function saveTicket(){
+  const title=document.getElementById('tk-title').value.trim();
+  const to=document.getElementById('tk-to').value;
+  const desc=document.getElementById('tk-desc').value.trim();
+  if(!title||!to||!desc){alert('Fill required fields.');return;}
+  await sb.from('tickets').insert({title,from_staff:document.getElementById('tk-from').value,
+    to_staff:to,priority:document.getElementById('tk-pri').value,description:desc,status:'Open'});
+  closeModal('modal-ticket');toast('Ticket sent!');
+  taskTab('tickets',null);
+}
+
+// ===== CRM =====
+let crmCurrentTab='pipeline';
+async function crmTab(tab,el){
+  crmCurrentTab=tab;
+  document.querySelectorAll('#page-crm .tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const c=document.getElementById('crm-content');
+  c.innerHTML='<div class="loading">Loading...</div>';
+  if(tab==='pipeline') await renderPipeline(c);
+  else if(tab==='leads') await renderLeadsList(c);
+  else if(tab==='followups') await renderFollowups(c);
+  else if(tab==='clients-crm') await renderCrmClients(c);
+}
+
+async function renderPipeline(c){
+  const {data:leads}=await sb.from('leads').select('*').order('created_at',{ascending:false});
+  const ld=leads||[];
+  const stages=['New','Contacted','Proposal Sent','Negotiation','Won'];
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;align-items:center;">
+      <div style="display:flex;gap:10px;font-size:12px;color:#666;">
+        <span>Total: <strong>${ld.filter(l=>l.stage!=='Lost').length}</strong></span>
+        <span>Hot: <strong style="color:#dc2626;">${ld.filter(l=>l.temperature==='Hot'&&l.stage!=='Won'&&l.stage!=='Lost').length}</strong></span>
+        <span>Won: <strong style="color:#16a34a;">${ld.filter(l=>l.stage==='Won').length}</strong></span>
+      </div>
+      <button class="primary" onclick="openAddLead()">+ Add Lead</button>
+    </div>
+    <div class="pipeline">
+      ${stages.map(stage=>{
+        const stageLeads=ld.filter(l=>l.stage===stage);
+        return`<div class="pipe-col">
+          <div class="pipe-header">${stage}<span class="pipe-count">${stageLeads.length}</span></div>
+          ${stageLeads.map(l=>`
+            <div class="lead-card" onclick="openLeadDetail('${l.id}')">
+              <div style="font-weight:500;font-size:12px;margin-bottom:2px;">${l.name}</div>
+              <div style="font-size:11px;color:#666;">${l.company||''}</div>
+              <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
+                ${pill('p-'+((l.service||'').toLowerCase().replace(/ /g,'')||'new'),l.service||'')}
+                ${pill(l.temperature==='Hot'?'p-hot':l.temperature==='Cold'?'p-cold':'p-warm',l.temperature||'')}
+              </div>
+              ${l.expected_value?`<div style="font-size:10px;color:#999;margin-top:4px;">AED ${Number(l.expected_value).toLocaleString()}/yr</div>`:''}
+            </div>`).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+async function openLeadDetail(id){
+  const {data:l}=await sb.from('leads').select('*').eq('id',id).single();
+  if(!l)return;
+  const notes=Array.isArray(l.notes)?l.notes:[];
+  const stages=['New','Contacted','Proposal Sent','Negotiation','Won','Lost'];
+  const html=`<div style="padding:16px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div style="flex:1;"><div style="font-size:15px;font-weight:600;">${l.name}</div><div style="font-size:12px;color:#666;">${l.company||''}</div></div>
+      ${pill(STAGE_PILL[l.stage]||'',l.stage||'')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:12px;">
+      <div><div style="font-size:10px;color:#999;">Phone</div>${l.phone||'—'}</div>
+      <div><div style="font-size:10px;color:#999;">Email</div>${l.email||'—'}</div>
+      <div><div style="font-size:10px;color:#999;">Service</div>${l.service||'—'}</div>
+      <div><div style="font-size:10px;color:#999;">Value</div>${l.expected_value?'AED '+Number(l.expected_value).toLocaleString()+'/yr':'—'}</div>
+      <div><div style="font-size:10px;color:#999;">Assigned</div>${l.assigned_to||'—'}</div>
+      <div><div style="font-size:10px;color:#999;">Temperature</div>${pill(l.temperature==='Hot'?'p-hot':l.temperature==='Cold'?'p-cold':'p-warm',l.temperature||'')}</div>
+    </div>
+    <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:#999;margin-bottom:6px;">Move Stage</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${stages.map(s=>`<button style="font-size:11px;padding:4px 10px;${s===l.stage?'background:#EEF4FF;color:#2563eb;border-color:#2563eb;':''}" onclick="changeLeadStage('${id}','${s}',this)">${s}</button>`).join('')}
+      </div>
+    </div>
+    <div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:500;color:#999;margin-bottom:6px;">Activity Log</div>
+      <div id="lead-notes-${id}">
+        ${notes.map(n=>`<div style="background:#F9F9F7;border-radius:7px;padding:8px 10px;margin-bottom:5px;"><div style="font-size:12px;">${n.text}</div><div style="font-size:10px;color:#999;">${n.type} · ${n.date}</div></div>`).join('')||'<div style="font-size:11px;color:#999;">No activity yet.</div>'}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input id="note-inp-${id}" placeholder="Add note..." style="flex:1;font-size:12px;">
+        <select id="note-type-${id}" style="width:100px;font-size:12px;"><option>Note</option><option>Call</option><option>Email</option><option>WhatsApp</option><option>Meeting</option></select>
+        <button class="primary" onclick="addLeadNote('${id}')">Add</button>
+      </div>
+    </div>
+    ${l.stage==='Won'?`<button class="success" onclick="convertToClient('${id}')">Convert to Active Client →</button>`:''}
+  </div>`;
+  showSidePanel(l.name, html);
+}
+
+function showSidePanel(title, html){
+  let panel = document.getElementById('side-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id='side-panel';
+    panel.style.cssText='position:fixed;right:0;top:0;bottom:0;width:420px;background:#fff;border-left:1px solid #e8e8e4;z-index:500;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,.08);';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML=`<div style="padding:14px 16px;border-bottom:1px solid #e8e8e4;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:13px;font-weight:600;">${title}</div><button onclick="document.getElementById('side-panel').remove()" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;">&#10005;</button></div>${html}`;
+}
+
+async function changeLeadStage(id,stage,btn){
+  await sb.from('leads').update({stage}).eq('id',id);
+  toast('Stage updated to '+stage);
+  crmTab(crmCurrentTab,null);
+  document.getElementById('side-panel')?.remove();
+}
+
+async function addLeadNote(id){
+  const text=document.getElementById(`note-inp-${id}`)?.value.trim();
+  const type=document.getElementById(`note-type-${id}`)?.value;
+  if(!text)return;
+  const {data:l}=await sb.from('leads').select('notes').eq('id',id).single();
+  const notes=Array.isArray(l?.notes)?l.notes:[];
+  notes.push({text,type,date:new Date().toISOString().slice(0,10)});
+  await sb.from('leads').update({notes}).eq('id',id);
+  const container=document.getElementById(`lead-notes-${id}`);
+  if(container) container.innerHTML=notes.map(n=>`<div style="background:#F9F9F7;border-radius:7px;padding:8px 10px;margin-bottom:5px;"><div style="font-size:12px;">${n.text}</div><div style="font-size:10px;color:#999;">${n.type} · ${n.date}</div></div>`).join('');
+  document.getElementById(`note-inp-${id}`).value='';
+  toast('Note added');
+}
+
+async function convertToClient(leadId){
+  const {data:l}=await sb.from('leads').select('*').eq('id',leadId).single();
+  if(!l)return;
+  await sb.from('clients').insert({name:l.company||l.name,contact_person:l.name,email:l.email,phone:l.phone,status:'Active',owner:l.assigned_to,since:new Date().toISOString().slice(0,10)});
+  await sb.from('leads').update({stage:'Won'}).eq('id',leadId);
+  toast(l.name+' converted to active client!');
+  document.getElementById('side-panel')?.remove();
+  crmTab('pipeline',null);
+}
+
+async function renderLeadsList(c){
+  const {data:leads}=await sb.from('leads').select('*').order('created_at',{ascending:false});
+  const ld=leads||[];
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="filters" style="margin-bottom:0;">
+        <select onchange="crmTab('leads',null)" id="lf-stage"><option value="">All Stages</option><option>New</option><option>Contacted</option><option>Proposal Sent</option><option>Negotiation</option><option>Won</option><option>Lost</option></select>
+        <input id="lf-search" placeholder="Search..." oninput="filterLeads()" style="width:180px;">
+      </div>
+      <button class="primary" onclick="openAddLead()">+ Add Lead</button>
+    </div>
+    <table class="table" id="leads-table">
+      <thead><tr><th>Name</th><th>Company</th><th>Service</th><th>Stage</th><th>Temp</th><th>Assigned</th><th>Next F/U</th><th></th></tr></thead>
+      <tbody>${ld.map(l=>`<tr>
+        <td style="font-weight:500;">${l.name}</td><td>${l.company||''}</td>
+        <td>${pill('p-'+(l.service||'').toLowerCase().replace(/ /g,'').replace('/',''),l.service||'')}</td>
+        <td>${pill(STAGE_PILL[l.stage]||'',l.stage||'')}</td>
+        <td>${pill(l.temperature==='Hot'?'p-hot':l.temperature==='Cold'?'p-cold':'p-warm',l.temperature||'')}</td>
+        <td style="font-size:11px;">${l.assigned_to||''}</td>
+        <td style="font-size:11px;">${l.next_followup||'—'}</td>
+        <td><button style="font-size:10px;padding:3px 7px;" onclick="openLeadDetail('${l.id}')">View</button></td>
+      </tr>`).join('')||'<tr><td colspan="8" class="empty">No leads yet.</td></tr>'}</tbody>
+    </table>`;
+}
+
+async function renderFollowups(c){
+  const {data}=await sb.from('followups').select('*').order('due_date');
+  const fd=data||[];
+  const today=new Date().toISOString().slice(0,10);
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Follow-ups</div>
+    </div>
+    ${fd.length?fd.map(f=>{
+      const overdue=!f.done&&f.due_date<today;
+      const d=new Date(f.due_date+'T00:00:00');
+      return`<div class="card" style="margin-bottom:10px;display:flex;gap:12px;${overdue?'border-color:#fca5a5;':''}">
+        <div style="min-width:50px;text-align:center;background:#F9F9F7;border-radius:8px;padding:8px 4px;">
+          <div style="font-size:18px;font-weight:600;line-height:1;">${d.getDate()}</div>
+          <div style="font-size:9px;color:#999;">${d.toLocaleString('default',{month:'short'})}</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:500;font-size:12px;">${f.lead_name} — ${f.company||''}</div>
+          <div style="font-size:11px;color:#666;">${f.type} · ${f.staff||''} · ${f.notes||''}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            ${!f.done?`<button class="success" style="font-size:10px;padding:3px 8px;" onclick="markFUDone('${f.id}')">Mark Done</button>`:'<span class="pill p-done">Done</span>'}
+            ${overdue?'<span class="pill p-overdue">Overdue</span>':''}
+          </div>
+        </div>
+      </div>`;}).join(''):'<div class="empty">No follow-ups scheduled.</div>'}`;
+}
+
+async function markFUDone(id){
+  await sb.from('followups').update({done:true}).eq('id',id);
+  toast('Follow-up done!');crmTab('followups',null);
+}
+
+async function renderCrmClients(c){
+  const {data}=await sb.from('clients').select('*').order('name');
+  const cd=data||[];
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Active Clients</div>
+      <button class="primary" onclick="openAddClient()">+ Add Client</button>
+    </div>
+    <table class="table">
+      <thead><tr><th>Client</th><th>Contact</th><th>Email</th><th>Status</th><th>Owner</th><th>Since</th></tr></thead>
+      <tbody>${cd.map(c=>`<tr>
+        <td style="font-weight:500;">${c.name}</td>
+        <td style="font-size:11px;">${c.contact_person||''}</td>
+        <td style="font-size:11px;">${c.email||''}</td>
+        <td>${pill(c.status==='Active'?'p-done':'p-lost',c.status||'')}</td>
+        <td style="font-size:11px;">${c.owner||''}</td>
+        <td style="font-size:11px;">${c.since||''}</td>
+      </tr>`).join('')||'<tr><td colspan="6" class="empty">No clients yet.</td></tr>'}</tbody>
+    </table>`;
+}
+
+async function openAddLead(){
+  await populateStaffSelects();
+  editIds.lead=null;
+  document.getElementById('ml-title').textContent='Add Lead';
+  ['ml-name','ml-company','ml-phone','ml-email','ml-wa','ml-value','ml-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ml-service').value='';
+  document.getElementById('ml-stage').value='New';
+  document.getElementById('ml-temp').value='Warm';
+  document.getElementById('ml-nextfu').value='';
+  openModal('modal-lead');
+}
+
+async function saveLead(){
+  const name=document.getElementById('ml-name').value.trim();
+  const service=document.getElementById('ml-service').value;
+  if(!name||!service){alert('Name and service required.');return;}
+  const obj={name,company:document.getElementById('ml-company').value,phone:document.getElementById('ml-phone').value,
+    email:document.getElementById('ml-email').value,whatsapp:document.getElementById('ml-wa').value,
+    service,stage:document.getElementById('ml-stage').value,temperature:document.getElementById('ml-temp').value,
+    assigned_to:document.getElementById('ml-assigned').value,source:document.getElementById('ml-source').value,
+    expected_value:parseFloat(document.getElementById('ml-value').value)||null,
+    next_followup:document.getElementById('ml-nextfu').value||null,
+    notes:document.getElementById('ml-notes').value?[{text:document.getElementById('ml-notes').value,type:'Note',date:new Date().toISOString().slice(0,10)}]:[]};
+  if(editIds.lead) await sb.from('leads').update(obj).eq('id',editIds.lead);
+  else await sb.from('leads').insert(obj);
+  closeModal('modal-lead');toast('Lead saved!');crmTab(crmCurrentTab,null);loadBadges();
+}
+
+// ===== MEETINGS =====
+let meetCurrentTab='list';
+async function meetTab(tab,el){
+  meetCurrentTab=tab;
+  document.querySelectorAll('#page-meetings .tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const c=document.getElementById('meet-content');
+  c.innerHTML='<div class="loading">Loading...</div>';
+  if(tab==='list') await renderMeetingsList(c);
+  else if(tab==='notes') await renderMeetingNotes(c);
+}
+
+async function renderMeetingsList(c){
+  const {data}=await sb.from('meetings').select('*').order('meeting_date',{ascending:false});
+  const md=data||[];
+  await populateClientSelects();
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="filters" style="margin-bottom:0;">
+        <select id="mf-status"><option value="">All Status</option><option>Scheduled</option><option>Completed</option><option>Cancelled</option></select>
+      </div>
+      <button class="primary" onclick="openAddMeeting()">+ Schedule Meeting</button>
+    </div>
+    <table class="table">
+      <thead><tr><th>Date & Time</th><th>Client</th><th>Type</th><th>Mode</th><th>Status</th><th>MOM</th><th></th></tr></thead>
+      <tbody>${md.map(m=>{
+        const mom=Array.isArray(m.mom)?m.mom:[];
+        return`<tr>
+          <td><div style="font-weight:500;">${m.meeting_date||''}</div><div style="font-size:10px;color:#999;">${m.meeting_time||''} · ${m.duration||''}</div></td>
+          <td>${m.client||''}</td>
+          <td style="font-size:11px;">${m.type||''}</td>
+          <td style="font-size:11px;">${m.mode||''}</td>
+          <td>${pill(m.status==='Completed'?'p-done':m.status==='Cancelled'?'p-lost':'p-inprogress',m.status||'')}</td>
+          <td>${mom.length?`<span style="color:#16a34a;font-size:11px;">&#10003; ${mom.length} note${mom.length>1?'s':''}</span>`:'<span style="color:#d97706;font-size:11px;">Pending</span>'}</td>
+          <td><button style="font-size:10px;padding:3px 7px;" onclick="openMeetingDetail('${m.id}')">View</button></td>
+        </tr>`;}).join('')||'<tr><td colspan="7" class="empty">No meetings yet.</td></tr>'}</tbody>
+    </table>`;
+}
+
+async function openMeetingDetail(id){
+  const {data:m}=await sb.from('meetings').select('*').eq('id',id).single();
+  if(!m)return;
+  const mom=Array.isArray(m.mom)?m.mom:[];
+  showSidePanel(m.type+' — '+m.client,`
+    <div style="padding:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:12px;">
+        <div><div style="font-size:10px;color:#999;">Date</div>${m.meeting_date} at ${m.meeting_time}</div>
+        <div><div style="font-size:10px;color:#999;">Duration</div>${m.duration}</div>
+        <div><div style="font-size:10px;color:#999;">Mode</div>${m.mode}</div>
+        <div><div style="font-size:10px;color:#999;">Location</div>${m.location||'—'}</div>
+        <div style="grid-column:1/-1;"><div style="font-size:10px;color:#999;">Agenda</div>${m.agenda||'—'}</div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:500;color:#999;margin-bottom:6px;">Status</div>
+        <div style="display:flex;gap:6px;">
+          ${['Scheduled','Completed','Cancelled'].map(s=>`<button style="font-size:11px;padding:4px 10px;${s===m.status?'background:#EEF4FF;color:#2563eb;border-color:#2563eb;':''}" onclick="updateMeetingStatus('${id}','${s}',this)">${s}</button>`).join('')}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:500;color:#999;margin-bottom:6px;">Minutes of Meeting</div>
+        <div id="mom-${id}">${mom.map(n=>`<div style="background:#F9F9F7;border-radius:7px;padding:8px;margin-bottom:6px;"><div style="font-size:12px;">${n.text}</div><div style="font-size:10px;color:#999;">${n.date}</div></div>`).join('')||'<div style="font-size:11px;color:#999;margin-bottom:8px;">No notes yet.</div>'}</div>
+        <textarea id="mom-inp-${id}" placeholder="Add meeting notes / decisions / action items..." style="width:100%;min-height:80px;font-size:12px;margin-bottom:6px;"></textarea>
+        <button class="primary" style="width:100%;" onclick="addMOM('${id}')">Save Notes</button>
+      </div>
+    </div>`);
+}
+
+async function updateMeetingStatus(id,status,btn){
+  await sb.from('meetings').update({status}).eq('id',id);
+  toast('Status updated');meetTab(meetCurrentTab,null);document.getElementById('side-panel')?.remove();
+}
+
+async function addMOM(id){
+  const text=document.getElementById(`mom-inp-${id}`)?.value.trim();
+  if(!text)return;
+  const {data:m}=await sb.from('meetings').select('mom').eq('id',id).single();
+  const mom=Array.isArray(m?.mom)?m.mom:[];
+  mom.push({text,date:new Date().toISOString().slice(0,10)});
+  await sb.from('meetings').update({mom,status:'Completed'}).eq('id',id);
+  const el=document.getElementById(`mom-${id}`);
+  if(el) el.innerHTML=mom.map(n=>`<div style="background:#F9F9F7;border-radius:7px;padding:8px;margin-bottom:6px;"><div style="font-size:12px;">${n.text}</div><div style="font-size:10px;color:#999;">${n.date}</div></div>`).join('');
+  document.getElementById(`mom-inp-${id}`).value='';
+  toast('Notes saved!');
+}
+
+async function renderMeetingNotes(c){
+  const {data}=await sb.from('meetings').select('*').eq('status','Completed').order('meeting_date',{ascending:false});
+  const md=data||[];
+  c.innerHTML=md.map(m=>{
+    const mom=Array.isArray(m.mom)?m.mom:[];
+    return`<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="flex:1;"><div style="font-weight:500;">${m.client} — ${m.type}</div><div style="font-size:11px;color:#999;">${m.meeting_date} · ${m.meeting_time}</div></div>
+        <button style="font-size:10px;padding:3px 8px;" onclick="openMeetingDetail('${m.id}')">Add Note</button>
+      </div>
+      ${mom.map(n=>`<div style="background:#F9F9F7;border-radius:7px;padding:8px;margin-bottom:5px;"><div style="font-size:12px;">${n.text}</div><div style="font-size:10px;color:#999;">${n.date}</div></div>`).join('')||'<div style="font-size:11px;color:#999;">No notes added.</div>'}
+    </div>`;}).join('')||'<div class="empty">No completed meetings yet.</div>';
+}
+
+async function openAddMeeting(){
+  await populateClientSelects();
+  editIds.meeting=null;
+  document.getElementById('mm-title').textContent='Schedule Meeting';
+  ['mm-type','mm-client','mm-date','mm-time','mm-loc','mm-agenda'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mm-status').value='Scheduled';
+  openModal('modal-meeting');
+}
+
+async function saveMeeting(){
+  const type=document.getElementById('mm-type').value;
+  const client=document.getElementById('mm-client').value;
+  const date=document.getElementById('mm-date').value;
+  const time=document.getElementById('mm-time').value;
+  if(!type||!client||!date||!time){alert('Fill required fields.');return;}
+  const obj={type,client,meeting_date:date,meeting_time:time,duration:document.getElementById('mm-dur').value,
+    mode:document.getElementById('mm-mode').value,location:document.getElementById('mm-loc').value,
+    agenda:document.getElementById('mm-agenda').value,status:document.getElementById('mm-status').value,mom:[]};
+  await sb.from('meetings').insert(obj);
+  closeModal('modal-meeting');toast('Meeting scheduled!');meetTab(meetCurrentTab,null);
+}
+
+// ===== HR =====
+let hrCurrentTab='staff';
+async function hrTab(tab,el){
+  hrCurrentTab=tab;
+  document.querySelectorAll('#page-hr .tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const c=document.getElementById('hr-content');
+  c.innerHTML='<div class="loading">Loading...</div>';
+  if(tab==='staff') await renderStaff(c);
+  else if(tab==='leaves') await renderLeaves(c);
+  else if(tab==='docs') await renderDocs(c);
+}
+
+async function renderStaff(c){
+  const {data}=await sb.from('employees').select('*').order('name');
+  const ed=data||[];
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="stat-row" style="margin-bottom:0;flex:1;margin-right:16px;">
+        <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${ed.length}</div></div>
+        <div class="stat"><div class="stat-label">Dubai</div><div class="stat-val">${ed.filter(e=>e.office==='Dubai').length}</div></div>
+        <div class="stat"><div class="stat-label">Calicut</div><div class="stat-val">${ed.filter(e=>e.office==='Calicut').length}</div></div>
+        <div class="stat"><div class="stat-label">Active</div><div class="stat-val" style="color:#16a34a;">${ed.filter(e=>e.status==='Active').length}</div></div>
+      </div>
+      <button class="primary" onclick="openAddEmployee()">+ Add Employee</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      ${ed.map((e,i)=>{
+        const colors=[['#EEF4FF','#1d4ed8'],['#F3F0FF','#6d28d9'],['#ECFDF5','#065f46'],['#FFFBEB','#92400e'],['#FFF0F3','#9f1239']];
+        const c=colors[i%colors.length];
+        const initials=e.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const used=e.annual_leave_used||0;const total=e.annual_leave_balance||30;
+        return`<div class="card" style="cursor:pointer;" onclick="">
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:${c[0]};color:${c[1]};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">${initials}</div>
+            <div><div style="font-weight:500;">${e.name}</div><div style="font-size:11px;color:#666;">${e.role||''}</div></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+            ${pill(e.office==='Dubai'?'p-dubai':'p-calicut',e.office||'')}
+            ${pill('p-done',e.department||'')}
+          </div>
+          <div style="font-size:10px;color:#999;display:flex;justify-content:space-between;margin-bottom:3px;"><span>Annual Leave</span><span>${used}/${total} days</span></div>
+          <div class="progress"><div class="progress-fill" style="width:${Math.round(used/total*100)}%;background:${used/total>0.8?'#dc2626':used/total>0.5?'#d97706':'#2563eb'};"></div></div>
+        </div>`;
+      }).join('')||'<div class="empty" style="grid-column:1/-1;">No employees yet.</div>'}
+    </div>`;
+}
+
+async function renderLeaves(c){
+  const [{data:leaves},{data:emps}]=await Promise.all([
+    sb.from('leaves').select('*').order('created_at',{ascending:false}),
+    sb.from('employees').select('name').eq('status','Active').order('name')
+  ]);
+  const ld=leaves||[];const ed=emps||[];
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Leave Requests</div>
+      <button class="primary" onclick="openLeaveModal()">+ Apply Leave</button>
+    </div>
+    <table class="table">
+      <thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+      <tbody>${ld.map(l=>`<tr>
+        <td style="font-weight:500;">${l.employee_name||''}</td>
+        <td style="font-size:11px;">${l.type||''}</td>
+        <td style="font-size:11px;">${l.from_date||''}</td>
+        <td style="font-size:11px;">${l.to_date||''}</td>
+        <td>${l.days||''}</td>
+        <td style="font-size:11px;max-width:140px;">${l.reason||''}</td>
+        <td>${pill(l.status==='Approved'?'p-done':l.status==='Rejected'?'p-lost':'p-pending',l.status||'')}</td>
+        <td>${l.status==='Pending'?`<div style="display:flex;gap:4px;"><button class="success" style="font-size:10px;padding:2px 7px;" onclick="approveLeave('${l.id}')">Approve</button><button class="danger" style="font-size:10px;padding:2px 7px;" onclick="rejectLeave('${l.id}')">Reject</button></div>`:''}</td>
+      </tr>`).join('')||'<tr><td colspan="8" class="empty">No leave requests.</td></tr>'}</tbody>
+    </table>`;
+}
+
+async function approveLeave(id){await sb.from('leaves').update({status:'Approved'}).eq('id',id);toast('Leave approved!');hrTab('leaves',null);}
+async function rejectLeave(id){await sb.from('leaves').update({status:'Rejected'}).eq('id',id);toast('Leave rejected.');hrTab('leaves',null);}
+
+async function renderDocs(c){
+  const {data}=await sb.from('documents').select('*').order('employee_name');
+  const dd=data||[];
+  const today=new Date();
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Employee Documents</div>
+      <button class="primary" onclick="openDocModal()">+ Upload Document</button>
+    </div>
+    <table class="table">
+      <thead><tr><th>Employee</th><th>Document</th><th>Type</th><th>Uploaded</th><th>Expiry</th><th>Status</th></tr></thead>
+      <tbody>${dd.map(d=>{
+        let statusPill='';
+        if(d.expiry_date){const exp=new Date(d.expiry_date);const diff=Math.round((exp-today)/(86400000));
+          if(diff<0)statusPill=pill('p-overdue','Expired');
+          else if(diff<90)statusPill=pill('p-pending','Expiring Soon');
+          else statusPill=pill('p-done','Valid');}
+        else statusPill=pill('p-inprogress','No Expiry');
+        return`<tr>
+          <td style="font-weight:500;">${d.employee_name||''}</td>
+          <td>${d.name||''}</td><td style="font-size:11px;">${d.type||''}</td>
+          <td style="font-size:11px;">${d.uploaded_date||''}</td>
+          <td style="font-size:11px;">${d.expiry_date||'—'}</td>
+          <td>${statusPill}</td>
+        </tr>`;}).join('')||'<tr><td colspan="6" class="empty">No documents.</td></tr>'}</tbody>
+    </table>`;
+}
+
+async function openAddEmployee(){
+  editIds.emp=null;
+  document.getElementById('me-title').textContent='Add Employee';
+  ['em-name','em-role','em-email','em-phone'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('em-office').value='Dubai';
+  document.getElementById('em-dept').value='Accounts';
+  document.getElementById('em-status').value='Active';
+  document.getElementById('em-leave').value=30;
+  document.getElementById('em-join').value='';
+  openModal('modal-emp');
+}
+
+async function saveEmployee(){
+  const name=document.getElementById('em-name').value.trim();
+  const role=document.getElementById('em-role').value.trim();
+  if(!name||!role){alert('Name and role required.');return;}
+  await sb.from('employees').insert({name,role,office:document.getElementById('em-office').value,
+    department:document.getElementById('em-dept').value,status:document.getElementById('em-status').value,
+    email:document.getElementById('em-email').value,phone:document.getElementById('em-phone').value,
+    join_date:document.getElementById('em-join').value||null,
+    annual_leave_balance:parseInt(document.getElementById('em-leave').value)||30});
+  closeModal('modal-emp');toast('Employee added!');hrTab('staff',null);populateStaffSelects();
+}
+
+async function openLeaveModal(){
+  await populateStaffSelects();
+  ['lv-from','lv-to','lv-reason'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('lv-emp').value='';
+  openModal('modal-leave');
+}
+
+async function saveLeave(){
+  const empId=document.getElementById('lv-emp').value;
+  const from=document.getElementById('lv-from').value;
+  const to=document.getElementById('lv-to').value;
+  if(!empId||!from||!to){alert('Fill required fields.');return;}
+  const {data:emp}=await sb.from('employees').select('name').eq('id',empId).single();
+  const days=Math.round((new Date(to)-new Date(from))/86400000)+1;
+  await sb.from('leaves').insert({employee_id:empId,employee_name:emp?.name||'',
+    type:document.getElementById('lv-type').value,from_date:from,to_date:to,days,
+    reason:document.getElementById('lv-reason').value,status:'Pending'});
+  closeModal('modal-leave');toast('Leave submitted!');hrTab('leaves',null);
+}
+
+async function openDocModal(){
+  const {data}=await sb.from('employees').select('id,name').order('name');
+  const el=document.getElementById('dc-emp');
+  el.innerHTML='<option value="">Select...</option>';
+  (data||[]).forEach(e=>{const o=document.createElement('option');o.value=e.id;o.text=e.name;el.appendChild(o);});
+  ['dc-name','dc-upl','dc-exp','dc-notes'].forEach(id=>document.getElementById(id).value='');
+  openModal('modal-doc');
+}
+
+async function saveDoc(){
+  const empId=document.getElementById('dc-emp').value;
+  const name=document.getElementById('dc-name').value.trim();
+  if(!empId||!name){alert('Fill required fields.');return;}
+  const {data:emp}=await sb.from('employees').select('name').eq('id',empId).single();
+  await sb.from('documents').insert({employee_id:empId,employee_name:emp?.name||'',name,
+    type:document.getElementById('dc-type').value,uploaded_date:document.getElementById('dc-upl').value||new Date().toISOString().slice(0,10),
+    expiry_date:document.getElementById('dc-exp').value||null,notes:document.getElementById('dc-notes').value});
+  closeModal('modal-doc');toast('Document saved!');hrTab('docs',null);
+}
+
+// ===== CREDENTIALS =====
+async function loadCredentials(){
+  const c=document.getElementById('page-credentials');
+  c.innerHTML='<div class="loading">Loading...</div>';
+  await populateClientSelects();
+  const {data}=await sb.from('credentials').select('*').order('client_name');
+  const cd=data||[];
+  const catColors={FTA:'p-ct','Corporate Tax':'p-fov',Accounting:'p-mis',Banking:'p-audit',Government:'p-vat',Other:'p-custom'};
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;align-items:center;">
+      <div style="display:flex;gap:10px;font-size:12px;color:#666;">
+        <span>Total: <strong>${cd.length}</strong></span>
+        <span>FTA/VAT: <strong>${cd.filter(x=>x.category?.includes('FTA')).length}</strong></span>
+        <span>Clients: <strong>${[...new Set(cd.map(x=>x.client_name))].length}</strong></span>
+      </div>
+      <button class="primary" onclick="openAddCred()">+ Add Credential</button>
+    </div>
+    <div style="background:#FFFBEB;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:11px;color:#92400e;margin-bottom:14px;">&#128274; Passwords are hidden by default. Click Reveal to view.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      ${cd.map(cr=>`
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div><div style="font-weight:500;font-size:12px;">${cr.portal_name||''}</div><div style="font-size:11px;color:#666;">${cr.client_name||''}</div></div>
+            ${pill(catColors[Object.keys(catColors).find(k=>(cr.category||'').includes(k))]||'p-custom',cr.category||'')}
+          </div>
+          <div style="font-size:11px;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f0f0f0;">
+              <span style="color:#999;min-width:70px;">Username</span>
+              <span id="u-${cr.id}" style="flex:1;">${credRevealed[cr.id]?cr.username:'●●●●●●●●'}</span>
+              ${credRevealed[cr.id]&&cr.username?`<button onclick="copyText('${cr.username.replace(/'/g,"\\'")}',this)" style="font-size:10px;padding:2px 6px;">Copy</button>`:''}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f0f0f0;">
+              <span style="color:#999;min-width:70px;">Password</span>
+              <span id="p-${cr.id}" style="flex:1;">${credRevealed[cr.id]?cr.password:'●●●●●●●●'}</span>
+              ${credRevealed[cr.id]&&cr.password?`<button onclick="copyText('${cr.password.replace(/'/g,"\\'")}',this)" style="font-size:10px;padding:2px 6px;">Copy</button>`:''}
+            </div>
+            ${cr.pin?`<div style="padding:4px 0;"><span style="color:#999;">PIN: </span>${credRevealed[cr.id]?cr.pin:'●●●●'}</div>`:''}
+            ${cr.url?`<div style="padding:4px 0;"><a href="${cr.url}" target="_blank" style="color:#2563eb;font-size:11px;">&#128279; Open Site</a></div>`:''}
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button style="font-size:10px;padding:3px 8px;" onclick="toggleCred('${cr.id}')">${credRevealed[cr.id]?'Hide':'Reveal'}</button>
+            <button style="font-size:10px;padding:3px 8px;" onclick="editCred('${cr.id}')">Edit</button>
+          </div>
+        </div>`).join('')||'<div class="empty" style="grid-column:1/-1;">No credentials saved yet.</div>'}
+    </div>`;
+}
+
+function toggleCred(id){credRevealed[id]=!credRevealed[id];loadCredentials();}
+function copyText(text,btn){navigator.clipboard.writeText(text).then(()=>{const o=btn.innerHTML;btn.innerHTML='&#10003;';setTimeout(()=>btn.innerHTML=o,1500);});}
+
+async function openAddCred(){
+  editIds.cred=null;
+  document.getElementById('mc-title').textContent='Add Credential';
+  ['mc-client','mc-name','mc-url','mc-user','mc-pass','mc-pin','mc-notes'].forEach(id=>document.getElementById(id).value='');
+  openModal('modal-cred');
+}
+
+async function editCred(id){
+  const {data:cr}=await sb.from('credentials').select('*').eq('id',id).single();
+  if(!cr)return;
+  editIds.cred=id;
+  document.getElementById('mc-title').textContent='Edit Credential';
+  document.getElementById('mc-client').value=cr.client_name||'';
+  document.getElementById('mc-cat').value=cr.category||'FTA / VAT Portal';
+  document.getElementById('mc-name').value=cr.portal_name||'';
+  document.getElementById('mc-url').value=cr.url||'';
+  document.getElementById('mc-user').value=cr.username||'';
+  document.getElementById('mc-pass').value=cr.password||'';
+  document.getElementById('mc-pin').value=cr.pin||'';
+  document.getElementById('mc-notes').value=cr.notes||'';
+  openModal('modal-cred');
+}
+
+async function saveCred(){
+  const client=document.getElementById('mc-client').value;
+  const name=document.getElementById('mc-name').value.trim();
+  if(!client||!name){alert('Client and name required.');return;}
+  const obj={client_name:client,category:document.getElementById('mc-cat').value,portal_name:name,
+    url:document.getElementById('mc-url').value,username:document.getElementById('mc-user').value,
+    password:document.getElementById('mc-pass').value,pin:document.getElementById('mc-pin').value,
+    notes:document.getElementById('mc-notes').value};
+  if(editIds.cred) await sb.from('credentials').update(obj).eq('id',editIds.cred);
+  else await sb.from('credentials').insert(obj);
+  closeModal('modal-cred');toast('Credential saved!');loadCredentials();
+}
+
+// ===== TO-DO =====
+let todoCurrentTab='todos';
+async function todoTab(tab,el){
+  todoCurrentTab=tab;
+  document.querySelectorAll('#page-todos .tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const c=document.getElementById('todo-content');
+  c.innerHTML='<div class="loading">Loading...</div>';
+  if(tab==='todos') await renderTodos(c);
+  else await renderReminders(c);
+}
+
+async function renderTodos(c){
+  const {data}=await sb.from('todos').select('*').order('due_date').order('created_at',{ascending:false});
+  const td=data||[];
+  const today=new Date().toISOString().slice(0,10);
+  await populateStaffSelects();
+  const overdue=td.filter(t=>!t.done&&t.due_date&&t.due_date<today);
+  const todayItems=td.filter(t=>!t.done&&t.due_date===today);
+  const upcoming=td.filter(t=>!t.done&&(!t.due_date||t.due_date>today));
+  const done=td.filter(t=>t.done);
+  const section=(title,items)=>items.length?`
+    <div style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${title} (${items.length})</div>
+      ${items.map(t=>`
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f0f0f0;">
+          <div onclick="toggleTodo('${t.id}',${t.done})" style="width:18px;height:18px;border-radius:4px;border:1.5px solid ${t.done?'transparent':'#ccc'};background:${t.done?'#16a34a':'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:1px;color:#fff;font-size:11px;">${t.done?'&#10003;':''}</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;${t.done?'text-decoration:line-through;color:#999;':''}">${t.title}</div>
+            <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap;align-items:center;">
+              ${t.due_date?`<span style="font-size:10px;color:#999;">&#128197; ${t.due_date}</span>`:''}
+              ${pill(t.priority==='High'?'p-overdue':t.priority==='Low'?'p-done':'p-pending',t.priority||'Medium')}
+              ${t.assigned_to?`<span style="font-size:10px;color:#666;">${t.assigned_to}</span>`:''}
+              ${!t.done&&t.due_date&&t.due_date<today?pill('p-overdue','Overdue'):''}
+            </div>
+          </div>
+          <button onclick="deleteTodo('${t.id}')" style="font-size:11px;padding:2px 6px;color:#999;border-color:transparent;">&#10005;</button>
+        </div>`).join('')}
+    </div>`:'';
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="stat-row" style="margin-bottom:0;flex:1;margin-right:16px;">
+        <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${td.length}</div></div>
+        <div class="stat"><div class="stat-label">Done</div><div class="stat-val" style="color:#16a34a;">${done.length}</div></div>
+        <div class="stat"><div class="stat-label">Pending</div><div class="stat-val" style="color:#d97706;">${upcoming.length+todayItems.length}</div></div>
+        <div class="stat"><div class="stat-label">Overdue</div><div class="stat-val" style="color:#dc2626;">${overdue.length}</div></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <select id="todo-filter-staff" onchange="filterTodosStaff()" style="width:180px;"><option value="">All Staff</option></select>
+        <button class="primary" onclick="openModal('modal-todo')">+ Add To-Do</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input id="quick-todo" placeholder="Quick add... press Enter" style="flex:1;" onkeydown="quickAddTodo(event)">
+    </div>
+    ${section('Overdue',overdue)}${section('Today',todayItems)}${section('Upcoming',upcoming)}${section('Completed',done)}
+    ${!td.length?'<div class="empty">No to-dos yet. Add one above!</div>':''}`;
+  // populate staff filter
+  const {data:emps}=await sb.from('employees').select('name').order('name');
+  const sf=document.getElementById('todo-filter-staff');
+  if(sf){(emps||[]).forEach(e=>{const o=document.createElement('option');o.value=e.name;o.text=e.name;sf.appendChild(o);});}
+}
+
+async function quickAddTodo(e){
+  if(e.key!=='Enter')return;
+  const inp=document.getElementById('quick-todo');
+  const title=inp.value.trim();if(!title)return;
+  await sb.from('todos').insert({title,assigned_to:currentUser.name,due_date:new Date().toISOString().slice(0,10),priority:'Medium',done:false});
+  inp.value='';toast('Added!');todoTab('todos',null);loadBadges();
+}
+
+async function toggleTodo(id,done){
+  await sb.from('todos').update({done:!done}).eq('id',id);
+  todoTab('todos',null);loadBadges();
+}
+async function deleteTodo(id){
+  await sb.from('todos').delete().eq('id',id);
+  todoTab('todos',null);loadBadges();
+}
+
+async function filterTodosStaff(){
+  const staff=document.getElementById('todo-filter-staff')?.value;
+  const c=document.getElementById('todo-content');
+  // re-render with filter
+  todoTab('todos',null);
+}
+
+async function saveTodo(){
+  const title=document.getElementById('td-title').value.trim();
+  const staff=document.getElementById('td-staff').value;
+  if(!title||!staff){alert('Fill required fields.');return;}
+  await sb.from('todos').insert({title,assigned_to:staff,due_date:document.getElementById('td-date').value||null,priority:document.getElementById('td-pri').value,done:false});
+  closeModal('modal-todo');toast('To-do added!');todoTab('todos',null);loadBadges();
+}
+
+async function renderReminders(c){
+  const {data}=await sb.from('reminders').select('*').order('reminder_date');
+  const rd=data||[];
+  const today=new Date().toISOString().slice(0,10);
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Reminders</div>
+      <button class="primary" onclick="openAddReminder()">+ Add Reminder</button>
+    </div>
+    ${rd.map(r=>{
+      const overdue=!r.done&&r.reminder_date<today;
+      const d=new Date((r.reminder_date||today)+'T00:00:00');
+      return`<div class="card" style="margin-bottom:10px;display:flex;gap:12px;${overdue?'border-color:#fca5a5;':''}">
+        <div style="min-width:50px;text-align:center;background:#F9F9F7;border-radius:8px;padding:8px 4px;">
+          <div style="font-size:18px;font-weight:600;line-height:1;">${d.getDate()}</div>
+          <div style="font-size:9px;color:#999;">${d.toLocaleString('default',{month:'short'})}</div>
+          ${r.reminder_time?`<div style="font-size:10px;color:#666;">${r.reminder_time}</div>`:''}
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:500;font-size:12px;">${r.title}</div>
+          <div style="font-size:11px;color:#666;">${r.assigned_to||''} ${r.related_to?' · '+r.related_to:''}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            ${!r.done?`<button class="success" style="font-size:10px;padding:3px 8px;" onclick="doneReminder('${r.id}')">Mark Done</button>`:'<span class="pill p-done">Done</span>'}
+            ${overdue?pill('p-overdue','Overdue'):''}
+          </div>
+        </div>
+      </div>`;}).join('')||'<div class="empty">No reminders set.</div>'}`;
+}
+
+async function doneReminder(id){await sb.from('reminders').update({done:true}).eq('id',id);toast('Done!');todoTab('reminders',null);}
+
+async function openAddReminder(){
+  await populateStaffSelects();
+  const html=`<div style="padding:16px;">
+    <div class="form-row"><label class="form-label">Title *</label><input id="rem-title" placeholder="Reminder title"></div>
+    <div class="form-row"><label class="form-label">Assigned To</label><select id="rem-staff"><option value="">Select...</option></select></div>
+    <div class="form-2col">
+      <div class="form-row"><label class="form-label">Date *</label><input id="rem-date" type="date"></div>
+      <div class="form-row"><label class="form-label">Time</label><input id="rem-time" type="time"></div>
+    </div>
+    <div class="form-row"><label class="form-label">Related To</label><input id="rem-related" placeholder="Client / task..."></div>
+    <div style="margin-top:8px;"><button class="primary" style="width:100%;" onclick="saveReminder()">Set Reminder</button></div>
+  </div>`;
+  showSidePanel('New Reminder',html);
+  const {data:emps}=await sb.from('employees').select('name').order('name');
+  const el=document.getElementById('rem-staff');
+  if(el){(emps||[]).forEach(e=>{const o=document.createElement('option');o.value=e.name;o.text=e.name;el.appendChild(o);});}
+}
+
+async function saveReminder(){
+  const title=document.getElementById('rem-title')?.value.trim();
+  const date=document.getElementById('rem-date')?.value;
+  if(!title||!date){alert('Title and date required.');return;}
+  await sb.from('reminders').insert({title,assigned_to:document.getElementById('rem-staff')?.value||currentUser.name,
+    reminder_date:date,reminder_time:document.getElementById('rem-time')?.value||null,
+    related_to:document.getElementById('rem-related')?.value,done:false});
+  document.getElementById('side-panel')?.remove();toast('Reminder set!');todoTab('reminders',null);
+}
+
+// ===== CLIENT MASTER =====
+async function loadClientsPage(){
+  const c=document.getElementById('page-clients');
+  c.innerHTML='<div class="loading">Loading...</div>';
+  await populateStaffSelects();
+  const {data}=await sb.from('clients').select('*').order('name');
+  const cd=data||[];
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Client Master — ${cd.length} clients</div>
+      <button class="primary" onclick="openAddClient()">+ Add Client</button>
+    </div>
+    <table class="table">
+      <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>Status</th><th>Owner</th><th>Since</th></tr></thead>
+      <tbody>${cd.map(c=>`<tr>
+        <td style="font-weight:500;">${c.name}</td>
+        <td style="font-size:11px;">${c.contact_person||''}</td>
+        <td style="font-size:11px;">${c.email||''}</td>
+        <td style="font-size:11px;">${c.phone||''}</td>
+        <td>${pill(c.status==='Active'?'p-done':'p-lost',c.status||'Active')}</td>
+        <td style="font-size:11px;">${c.owner||''}</td>
+        <td style="font-size:11px;">${c.since||''}</td>
+      </tr>`).join('')||'<tr><td colspan="7" class="empty">No clients yet.</td></tr>'}</tbody>
+    </table>`;
+}
+
+async function openAddClient(){
+  await populateStaffSelects();
+  editIds.client=null;
+  document.getElementById('mcl-title').textContent='Add Client';
+  ['cl-name','cl-contact','cl-email','cl-phone','cl-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cl-status').value='Active';
+  document.getElementById('cl-since').value='';
+  openModal('modal-client');
+}
+
+async function saveClient(){
+  const name=document.getElementById('cl-name').value.trim();
+  if(!name){alert('Company name required.');return;}
+  await sb.from('clients').insert({name,contact_person:document.getElementById('cl-contact').value,
+    email:document.getElementById('cl-email').value,phone:document.getElementById('cl-phone').value,
+    status:document.getElementById('cl-status').value,owner:document.getElementById('cl-owner').value,
+    since:document.getElementById('cl-since').value||null,notes:document.getElementById('cl-notes').value});
+  closeModal('modal-client');toast('Client added!');loadClientsPage();populateClientSelects();
+}
+
+// ===== EMPLOYEE MASTER =====
+async function loadEmployeesPage(){
+  const c=document.getElementById('page-employees');
+  c.innerHTML='<div class="loading">Loading...</div>';
+  const {data}=await sb.from('employees').select('*').order('name');
+  const ed=data||[];
+  c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;">Employee Master — ${ed.length} staff</div>
+      <button class="primary" onclick="openAddEmployee()">+ Add Employee</button>
+    </div>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Role</th><th>Office</th><th>Department</th><th>Email</th><th>Phone</th><th>Join Date</th><th>Status</th></tr></thead>
+      <tbody>${ed.map(e=>`<tr>
+        <td style="font-weight:500;">${e.name}</td>
+        <td style="font-size:11px;">${e.role||''}</td>
+        <td>${pill(e.office==='Dubai'?'p-dubai':'p-calicut',e.office||'')}</td>
+        <td style="font-size:11px;">${e.department||''}</td>
+        <td style="font-size:11px;">${e.email||''}</td>
+        <td style="font-size:11px;">${e.phone||''}</td>
+        <td style="font-size:11px;">${e.join_date||''}</td>
+        <td>${pill(e.status==='Active'?'p-done':'p-lost',e.status||'Active')}</td>
+      </tr>`).join('')||'<tr><td colspan="8" class="empty">No employees yet.</td></tr>'}</tbody>
+    </table>`;
+}
+
+// ===== BOOT =====
+window.addEventListener('DOMContentLoaded',()=>{
+  const saved=localStorage.getItem('acumen_user');
+  if(saved){currentUser=JSON.parse(saved);startApp();}
+});
+</script>
+</body>
+</html>
