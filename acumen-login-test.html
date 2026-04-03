@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acumen Login Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+<style>
+body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#1B2B5E;margin:0;}
+.box{background:#fff;padding:32px;border-radius:16px;width:360px;}
+h2{margin:0 0 20px;color:#1B2B5E;}
+input{width:100%;padding:10px;margin-bottom:12px;border:1px solid #ccc;border-radius:8px;font-size:14px;box-sizing:border-box;}
+button{width:100%;padding:11px;background:#1B2B5E;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;margin-bottom:8px;}
+button:hover{background:#152249;}
+button.sec{background:#00B4C5;}
+#log{background:#f5f5f5;border-radius:8px;padding:12px;font-size:12px;white-space:pre-wrap;margin-top:12px;max-height:200px;overflow-y:auto;color:#333;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>Acumen Login Test</h2>
+  <input id="user" placeholder="Username (e.g. noufal)" value="noufal">
+  <input id="pass" type="password" placeholder="Password" value="123">
+  <button onclick="testLogin()">Test Login</button>
+  <button class="sec" onclick="testConnection()">Test DB Connection</button>
+  <button class="sec" onclick="listUsers()">List All Users</button>
+  <div id="log">Ready. Click a button to test...</div>
+</div>
+
+<script>
+const SURL='https://bgxnmxughmplkajijoqx.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJneG5teHVnaG1wbGthamlqb3F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDM2NjIsImV4cCI6MjA5MDc3OTY2Mn0.tSXJAIIXfmIYPCnY15cU60EzsVNjEr1conIm1VClXf0';
+
+function log(msg){
+  const el=document.getElementById('log');
+  el.textContent+= '\n' + msg;
+  el.scrollTop=el.scrollHeight;
+}
+
+let sb;
+window.onload=()=>{
+  try{
+    sb=window.supabase.createClient(SURL,SKEY);
+    log('✅ Supabase loaded OK');
+  }catch(e){
+    log('❌ Supabase load failed: '+e.message);
+  }
+};
+
+async function testConnection(){
+  document.getElementById('log').textContent='Testing connection...';
+  try{
+    const {data,error}=await sb.from('clients').select('count').limit(1);
+    if(error)log('❌ DB Error: '+error.message+' | Code: '+error.code);
+    else log('✅ DB Connected! clients table OK');
+  }catch(e){log('❌ Exception: '+e.message);}
+}
+
+async function listUsers(){
+  document.getElementById('log').textContent='Fetching users...';
+  try{
+    const {data,error}=await sb.from('app_users').select('name,username,password,role');
+    if(error){log('❌ Error: '+error.message+'\nCode: '+error.code+'\nHint: '+error.hint);return;}
+    if(!data||data.length===0){log('⚠️ No users found in app_users table');return;}
+    log('✅ Found '+data.length+' users:');
+    data.forEach(u=>log('  - '+u.username+' / '+u.password+' ('+u.role+')'));
+  }catch(e){log('❌ Exception: '+e.message);}
+}
+
+async function testLogin(){
+  document.getElementById('log').textContent='Attempting login...';
+  const user=document.getElementById('user').value.trim().toLowerCase();
+  const pass=document.getElementById('pass').value.trim();
+  log('Username: '+user+' | Password: '+pass);
+  try{
+    const {data,error}=await sb.from('app_users').select('*').ilike('username',user);
+    if(error){log('❌ Query Error: '+error.message+'\nCode: '+error.code);return;}
+    log('Users found with that username: '+(data?data.length:0));
+    if(data&&data.length>0){
+      log('DB password: "'+data[0].password+'" | Entered: "'+pass+'"');
+      log('Match: '+(data[0].password===pass));
+      if(data[0].password===pass)log('✅ LOGIN SUCCESS! User: '+data[0].name);
+      else log('❌ Password mismatch');
+    }else{
+      log('❌ No user found with username: '+user);
+    }
+  }catch(e){log('❌ Exception: '+e.message);}
+}
+</script>
+</body>
+</html>
