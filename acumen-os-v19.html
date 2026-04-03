@@ -2596,17 +2596,9 @@ async function renderReportSummary(c){
             <div class="report-val">${v.done}/${v.total}</div>
           </div>`}).join('')}
       </div>
-      <div class="card"><div class="card-title">⏱ Timer Logs (All Time)</div>
-        <div style="margin-bottom:10px;">
-          ${Object.entries((timeLogs||[]).reduce((acc,l)=>{acc[l.user_name]=(acc[l.user_name]||0)+Number(l.hours);return acc;},{})
-            .sort((a,b)=>b[1]-a[1])
-            .map(([name,hrs])=>`
-            <div class="report-row">
-              <div class="report-name" style="font-size:12px;font-weight:500;">${name}</div>
-              <div style="flex:1;padding:0 8px;"><div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,hrs/0.5)}%;background:var(--teal);"></div></div></div>
-              <div style="font-size:12px;font-weight:600;color:var(--teal);">${Number(hrs).toFixed(2)}h</div>
-            </div>`).join('')||'<div style="color:var(--muted);font-size:12px;">No timer logs yet.</div>'}
-        </div>
+      <div class="card"><div class="card-title">⏱ Timer Logs</div>
+        <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:6px;">ALL TIME — BY EMPLOYEE</div>
+        <div id="timer-log-summary" style="margin-bottom:10px;"></div>
         <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:6px;">TODAY</div>
         ${todayLogs.length?todayLogs.map(l=>`
           <div class="report-row">
