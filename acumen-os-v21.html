@@ -1023,7 +1023,7 @@ async function loadDashboard(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px;" class="report-grid">
       <div class="card"><div class="card-title">Tasks by Category <span style="font-size:10px;color:var(--muted);">(click to drill down)</span></div>
         ${Object.entries(catMap).map(([cat,v])=>`
-          <div class="report-row" style="cursor:pointer;" onclick="drillDownCategory('${cat}')" title="Click to see ${cat} tasks">
+          <div class="report-row" style="cursor:pointer;" data-cat="${cat}" onclick="drillDownCategory(this.dataset.cat)" title="Click to see tasks">
             <div class="report-name">${pill(CAT_PILL[cat]||'p-custom',cat)}</div>
             <div style="flex:1;padding:0 8px;">
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
@@ -1037,13 +1037,62 @@ async function loadDashboard(){
                 <span style="font-size:9px;color:var(--muted);">${v.done}/${v.total}</span>
               </div>
             </div>
-            <div class="report-val">${v.actual}h ↗</div>
+            <div class="report-val" style="color:var(--teal);font-weight:600;">${v.actual}h ↗</div>
           </div>`).join('')||'<div style="color:var(--muted);font-size:12px;padding:8px 0;">No tasks yet.</div>'}
       </div>
       <div class="card"><div class="card-title">Lead Pipeline</div>
-        ${['New','Contacted','Proposal Sent','Negotiation','Won'].map(s=>{const c_=ld.filter(l=>l.stage===s).length;return`<div class="report-row"><div class="report-name">${pill(STAGE_PILL[s]||'',s)}</div><div style="flex:1;padding:0 8px;"><div class="bar-wrap"><div class="bar-fill" style="width:${ld.length?Math.round(c_/ld.length*100):0}%;background:var(--navy);"></div></div></div><div class="report-val">${c_}</div></div>`;}).join('')}
+        ${['New','Contacted','Proposal Sent','Negotiation','Won'].map(s=>{const c_=ld.filter(l=>l.stage===s).length;return`<div class="report-row" style="cursor:pointer;" onclick="showPage('crm',null);setTimeout(()=>crmTab('leads',null),200)" title="View leads"><div class="report-name">${pill(STAGE_PILL[s]||'',s)}</div><div style="flex:1;padding:0 8px;"><div class="bar-wrap"><div class="bar-fill" style="width:${ld.length?Math.round(c_/ld.length*100):0}%;background:var(--navy);"></div></div></div><div class="report-val">${c_} ↗</div></div>`;}).join('')}
       </div>
     </div>`;
+}
+
+async function drillDownEmployee(empName){
+  const [{data:tasks},{data:logs}]=await Promise.all([
+    sb.from('tasks').select('*').eq('assigned_to',empName).order('status').order('due_date'),
+    sb.from('time_logs').select('*').eq('user_name',empName).order('date',{ascending:false})
+  ]);
+  const td=tasks||[];const tl=logs||[];
+  const tlMap={};tl.forEach(l=>{if(l.task_id)tlMap[l.task_id]=(tlMap[l.task_id]||0)+Number(l.hours);});
+  const totalAlloc=td.reduce((a,t)=>a+Number(t.allocated_hours||0),0);
+  const totalTimer=tl.reduce((a,l)=>a+Number(l.hours),0);
+  const done=td.filter(t=>t.status==='Done').length;
+  const overdue=td.filter(t=>t.status==='Overdue').length;
+  const variance=(totalTimer-totalAlloc).toFixed(1);
+  showPanel(`👤 ${empName}`,`<div style="padding:16px;">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;">
+      <div class="stat"><div class="stat-label">Total Tasks</div><div class="stat-val">${td.length}</div><div class="stat-hint">${done} done · ${overdue} overdue</div></div>
+      <div class="stat"><div class="stat-label">Allocated</div><div class="stat-val">${totalAlloc.toFixed(0)}h</div></div>
+      <div class="stat"><div class="stat-label">⏱ Timer</div><div class="stat-val" style="color:var(--teal);">${totalTimer.toFixed(2)}h</div></div>
+      <div class="stat"><div class="stat-label">Variance</div><div class="stat-val" style="color:${variance>0?'#dc2626':'#16a34a'};">${variance>0?'+':''}${variance}h</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">ALL TASKS</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px;">
+      <thead><tr style="background:#F8FAFF;">
+        <th style="padding:7px;text-align:left;border-bottom:1px solid var(--border);">Task</th>
+        <th style="padding:7px;text-align:left;border-bottom:1px solid var(--border);">Client</th>
+        <th style="padding:7px;text-align:center;border-bottom:1px solid var(--border);">Alloc</th>
+        <th style="padding:7px;text-align:center;border-bottom:1px solid var(--border);">⏱</th>
+        <th style="padding:7px;text-align:center;border-bottom:1px solid var(--border);">Status</th>
+      </tr></thead>
+      <tbody>
+        ${td.map(t=>{const timer=tlMap[t.id]||0;return`<tr style="border-bottom:1px solid #f0f4ff;">
+          <td style="padding:7px;font-weight:500;">${t.name}</td>
+          <td style="padding:7px;color:var(--muted);">${t.client_name||''}</td>
+          <td style="padding:7px;text-align:center;">${t.allocated_hours||0}h</td>
+          <td style="padding:7px;text-align:center;color:var(--teal);font-weight:600;">${timer.toFixed(2)}h</td>
+          <td style="padding:7px;text-align:center;">${pill(STATUS_PILL[t.status]||'',t.status||'')}</td>
+        </tr>`;}).join('')}
+      </tbody>
+    </table>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">RECENT TIMER SESSIONS</div>
+    ${tl.slice(0,10).map(l=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f4ff;font-size:11px;">
+        <span style="color:var(--muted);min-width:76px;">${l.date||''}</span>
+        <span style="flex:1;">${l.task_name||''}</span>
+        <span style="font-size:11px;color:var(--muted);">${l.client_name||''}</span>
+        <span style="font-weight:600;color:var(--teal);">${Number(l.hours).toFixed(2)}h</span>
+      </div>`).join('')||'<div style="color:var(--muted);font-size:12px;">No timer sessions yet.</div>'}
+  </div>`);
 }
 
 async function drillDownCategory(cat){
@@ -3010,8 +3059,8 @@ async function renderEmpReportTable(tasks,timeLogs,emps){
         <tbody>
           ${Object.values(staffMap).map(s=>{
             const variance=(s.actual-s.alloc).toFixed(1);
-            return`<tr>
-              <td style="font-weight:500;">${s.name}</td>
+            return`<tr style="cursor:pointer;" data-name="${s.name}" onclick="drillDownEmployee(this.dataset.name)" title="Click to drill down">
+              <td style="font-weight:500;">${s.name} <span style="font-size:10px;color:var(--teal);">↗</span></td>
               ${cats.map(cat=>{const d=s.cats[cat];if(!d)return`<td style="text-align:center;color:#ccc;">—</td>`;
                 return`<td style="text-align:center;padding:8px;">
                   <div style="font-size:11px;font-weight:600;">${d.done}/${d.total}</div>
@@ -3111,7 +3160,7 @@ async function renderClientReport(tasks,timeLogs){
           ${sorted.map(([name,v])=>{
             const variance=(v.timerHrs-v.alloc).toFixed(1);
             const pct=v.total?Math.round(v.done/v.total*100):0;
-            return`<tr style="cursor:pointer;" onclick="drillDownClient('${name.replace(/'/g,"\'")}')" title="Click to drill down">
+            return`<tr style="cursor:pointer;" data-client="${name}" onclick="drillDownClient(this.dataset.client)" title="Click to drill down">
               <td><div style="font-weight:600;">${name}</div></td>
               <td style="font-size:10px;">${Object.keys(v.cats).map(c_=>pill(CAT_PILL[c_]||'p-custom',c_)).join(' ')}</td>
               <td style="text-align:center;"><span style="font-weight:600;">${v.done}</span>/<span style="color:var(--muted);">${v.total}</span></td>
@@ -3264,7 +3313,7 @@ function renderTaskReportTable(td,tlMap){
             const alloc=Number(t.allocated_hours||0);
             const variance=(timer-alloc).toFixed(1);
             const pct=alloc>0?Math.min(100,Math.round(timer/alloc*100)):0;
-            return`<tr style="cursor:pointer;" onclick="drillDownTask('${t.id}','${(t.name||'').replace(/'/g,"\'")}')" title="Click for details">
+            return`<tr style="cursor:pointer;" data-id="${t.id}" data-name="${(t.name||'').replace(/"/g,'&#34;')}" onclick="drillDownTask(this.dataset.id,this.dataset.name)" title="Click for details">
               <td><div style="font-weight:500;">${t.name}</div>${t.delegated_to?`<div style="font-size:10px;color:var(--teal);">↪ ${t.delegated_to}</div>`:''}</td>
               <td style="font-size:11px;">${t.client_name||''}</td>
               <td>${pill(CAT_PILL[t.category]||'p-custom',t.category||'')}</td>
