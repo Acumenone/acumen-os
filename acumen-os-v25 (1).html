@@ -2703,8 +2703,15 @@ async function openAddEmployee(){
 async function saveEmployee(){
   const name=document.getElementById('em-name').value.trim();const role=document.getElementById('em-role').value.trim();
   if(!name||!role){alert('Name and role required.');return;}
-  await sb.from('employees').insert({name,role,office:document.getElementById('em-office').value,department:document.getElementById('em-dept').value,status:document.getElementById('em-status').value,email:document.getElementById('em-email').value,phone:document.getElementById('em-phone').value,join_date:document.getElementById('em-join').value||null,annual_leave_balance:30,annual_leave_used:0});
-  closeModal('modal-emp');toast('Employee added!');hrTab('staff',null);populateStaffSelects();
+  const obj={name,role,office:document.getElementById('em-office').value,department:document.getElementById('em-dept').value,status:document.getElementById('em-status').value,email:document.getElementById('em-email').value,phone:document.getElementById('em-phone').value,join_date:document.getElementById('em-join').value||null};
+  if(editIds.emp){
+    await sb.from('employees').update(obj).eq('id',editIds.emp);
+    toast('Employee updated!');editIds.emp=null;
+  } else {
+    await sb.from('employees').insert({...obj,annual_leave_balance:30,annual_leave_used:0});
+    toast('Employee added!');
+  }
+  closeModal('modal-emp');hrTab('staff',null);loadEmployeesPage();populateStaffSelects();
 }
 
 async function openLeaveModal(){
@@ -3745,18 +3752,32 @@ function renderClientRows(clients){
 
 async function viewClientTasks(clientName){
   closePanel();
-  // Navigate to tasks and filter by this client
-  showPage('tasks', document.querySelector('.nav-item[onclick*="tasks"]'));
+  // Store client filter to apply after page loads
+  window._pendingClientFilter=clientName;
+  // Navigate to task list tab
+  const navItem=null;
+  showPage('tasks', navItem);
+  // Wait for tab and dropdown to fully render
   setTimeout(async()=>{
-    await taskTab('list', document.querySelector('#page-tasks .tab'));
+    // Switch to list tab
+    const listTab=document.querySelectorAll('#page-tasks .tab')[1];
+    if(listTab) listTab.click();
+    // Wait for list to render with populated dropdowns
     setTimeout(()=>{
       const fc=document.getElementById('fl-client');
-      if(fc){
-        fc.value=clientName;
+      if(fc&&window._pendingClientFilter){
+        // Find matching option
+        for(let i=0;i<fc.options.length;i++){
+          if(fc.options[i].value===window._pendingClientFilter||fc.options[i].text===window._pendingClientFilter){
+            fc.selectedIndex=i;
+            break;
+          }
+        }
+        window._pendingClientFilter=null;
         filterTaskList();
       }
-    },400);
-  },200);
+    },800);
+  },300);
 }
 
 async function filterClientsList(){
@@ -3772,111 +3793,86 @@ async function filterClientsList(){
 
 async function viewClient(id){
   const {data:cl}=await sb.from('clients').select('*').eq('id',id).single();
-  const {data:tasks}=await sb.from('tasks').select('name,status,category,assigned_to,due_date').eq('client_name',cl.name).order('status');
-  const td=tasks||[];
-  const done=td.filter(t=>t.status==='Done').length;
-  showPanel(cl.name,
-    '<div style="padding:16px;">'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">'
-    +'<div class="stat"><div class="stat-label">Status</div><div>'+pill(cl.status==='Active'?'p-done':'p-lost',cl.status||'')+'</div></div>'
-    +'<div class="stat"><div class="stat-label">Owner</div><div style="font-size:12px;font-weight:500;">'+(cl.owner||'Unassigned')+'</div></div>'
-    +'<div class="stat"><div class="stat-label">Contact</div><div style="font-size:12px;">'+(cl.contact_person||'—')+'</div></div>'
-    +'<div class="stat"><div class="stat-label">Since</div><div style="font-size:12px;">'+(cl.since||'—')+'</div></div>'
-    +'</div>'
-    +(cl.email?'<div style="margin-bottom:8px;font-size:12px;">📧 <a href="mailto:'+cl.email+'" style="color:var(--teal);">'+cl.email+'</a></div>':'')
-    +(cl.phone?'<div style="margin-bottom:12px;font-size:12px;">📞 <a href="tel:'+cl.phone+'" style="color:var(--teal);">'+cl.phone+'</a></div>':'')
-    +'<div style="display:flex;gap:8px;margin-bottom:16px;">'
-    +'<button class="primary sm" data-cid="'+id+'" onclick="editClient(this.dataset.cid)">✏️ Edit Client</button>'
-    +'<button class="sm" data-cname="'+cl.name.replace(/"/g,'&quot;')+'" onclick="viewClientTasks(this.dataset.cname)">📋 View Tasks</button>'
-    +'</div>'
-    +'<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">TASKS ('+td.length+') — '+done+' done</div>'
-    +td.slice(0,10).map(t=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f4ff;font-size:12px;">'
-      +pill(t.status==='Done'?'p-done':t.status==='Overdue'?'p-overdue':'p-pending',t.status||'')
-      +'<span style="flex:1;">'+t.name+'</span>'
-      +'<span style="font-size:10px;color:var(--muted);">'+( t.assigned_to||'')+'</span>'
-      +'</div>').join('')
-    +(td.length>10?'<div style="font-size:11px;color:var(--muted);padding:6px 0;">+' +(td.length-10)+' more tasks</div>':'')
-    +'</div>'
-  );
-}
-
-async function editClient(id){
-  const {data:cl}=await sb.from('clients').select('*').eq('id',id).single();
   if(!cl)return;
-  // Pre-fill modal
-  document.getElementById('mcl-title').textContent='Edit Client';
-  document.getElementById('cl-name').value=cl.name||'';
-  document.getElementById('cl-contact').value=cl.contact_person||'';
-  document.getElementById('cl-email').value=cl.email||'';
-  document.getElementById('cl-phone').value=cl.phone||'';
-  document.getElementById('cl-status').value=cl.status||'Active';
-  document.getElementById('cl-since').value=cl.since||'';
-  // Set owner
-  await populateStaffSelects();
-  document.getElementById('cl-owner').value=cl.owner||'';
-  editIds.client=id;
-  openModal('modal-client');
-}
+  const [{data:tasks},{data:timeLogs}]=await Promise.all([
+    sb.from('tasks').select('id,name,status,category,assigned_to,due_date,allocated_hours').eq('client_name',cl.name).order('status'),
+    sb.from('time_logs').select('hours,task_id').eq('client_name',cl.name)
+  ]);
+  const td=tasks||[];const tl=timeLogs||[];
+  const done=td.filter(t=>t.status==='Done').length;
+  const pending=td.filter(t=>t.status==='Pending').length;
+  const inprog=td.filter(t=>t.status==='In Progress').length;
+  const overdue=td.filter(t=>t.status==='Overdue').length;
+  const totalAlloc=td.reduce((a,t)=>a+Number(t.allocated_hours||0),0);
+  const totalTimer=tl.reduce((a,l)=>a+Number(l.hours||0),0);
+  const variance=(totalTimer-totalAlloc).toFixed(1);
+  const pct=td.length?Math.round(done/td.length*100):0;
 
-async function openAddClient(){
-  await populateStaffSelects();
-  editIds.client=null;
-  document.getElementById('mcl-title').textContent='Add Client';
-  ['cl-name','cl-contact','cl-email','cl-phone','cl-since'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('cl-status').value='Active';
-  document.getElementById('cl-owner').value='';
-  openModal('modal-client');
-}
+  // Category time summary
+  const cats={};
+  td.forEach(t=>{if(t.category){if(!cats[t.category])cats[t.category]={alloc:0,timer:0};cats[t.category].alloc+=Number(t.allocated_hours||0);}});
+  tl.forEach(l=>{const task=td.find(t=>t.id===l.task_id);if(task&&task.category){if(!cats[task.category])cats[task.category]={alloc:0,timer:0};cats[task.category].timer+=Number(l.hours||0);}});
 
-async function saveClient(){
-  const name=document.getElementById('cl-name').value.trim();
-  if(!name){alert('Company name required.');return;}
-  const obj={name,
-    contact_person:document.getElementById('cl-contact').value,
-    email:document.getElementById('cl-email').value,
-    phone:document.getElementById('cl-phone').value,
-    status:document.getElementById('cl-status').value,
-    owner:document.getElementById('cl-owner').value,
-    since:document.getElementById('cl-since').value||null
-  };
-  if(editIds.client){
-    await sb.from('clients').update(obj).eq('id',editIds.client);
-    toast('Client updated!');
-  } else {
-    await sb.from('clients').insert(obj);
-    toast('Client added!');
+  let html='<div style="padding:0;">';
+
+  // Navy header with stat cards
+  html+='<div style="background:#1B2B5E;padding:16px;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">'
+    +'<div><div style="font-size:16px;font-weight:700;color:#fff;">'+cl.name+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;">'+(cl.owner||'Unassigned')+(cl.since?' \u00B7 Since '+cl.since:'')+'</div></div>'
+    +'<span style="background:'+(cl.status==='Active'?'#16a34a':'#dc2626')+';color:#fff;font-size:10px;padding:3px 10px;border-radius:20px;font-weight:600;">'+(cl.status||'Active')+'</span>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
+    +'<div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#fff;">'+td.length+'</div><div style="font-size:10px;color:rgba(255,255,255,.6);">Tasks</div></div>'
+    +'<div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#4ade80;">'+done+'</div><div style="font-size:10px;color:rgba(255,255,255,.6);">Done</div></div>'
+    +'<div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#fbbf24;">'+(pending+inprog)+'</div><div style="font-size:10px;color:rgba(255,255,255,.6);">Pending</div></div>'
+    +'<div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:'+(overdue?'#f87171':'rgba(255,255,255,.5)')+';">'+overdue+'</div><div style="font-size:10px;color:rgba(255,255,255,.6);">Overdue</div></div>'
+    +'</div></div>';
+
+  // Progress bar
+  html+='<div style="padding:14px 16px;border-bottom:1px solid #f0f4ff;">'
+    +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;">'
+    +'<span style="font-weight:500;color:var(--navy);">Overall Progress</span><span>'+pct+'% complete</span></div>'
+    +'<div style="height:8px;background:#e8eaf0;border-radius:4px;overflow:hidden;">'
+    +'<div style="height:100%;width:'+pct+'%;background:'+(pct>=80?'#16a34a':pct>=50?'var(--navy)':'#d97706')+';border-radius:4px;"></div>'
+    +'</div></div>';
+
+  // Time summary
+  html+='<div style="padding:14px 16px;border-bottom:1px solid #f0f4ff;">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;">Time Summary</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">'
+    +'<div style="text-align:center;background:#F8FAFF;border-radius:8px;padding:8px;"><div style="font-size:16px;font-weight:700;color:var(--navy);">'+totalAlloc.toFixed(1)+'h</div><div style="font-size:10px;color:var(--muted);">Allocated</div></div>'
+    +'<div style="text-align:center;background:#F8FAFF;border-radius:8px;padding:8px;"><div style="font-size:16px;font-weight:700;color:var(--teal);">'+totalTimer.toFixed(1)+'h</div><div style="font-size:10px;color:var(--muted);">Logged</div></div>'
+    +'<div style="text-align:center;background:#F8FAFF;border-radius:8px;padding:8px;"><div style="font-size:16px;font-weight:700;color:'+(variance>0?'#dc2626':'#16a34a')+';">'+(variance>0?'+':'')+variance+'h</div><div style="font-size:10px;color:var(--muted);">Variance</div></div>'
+    +'</div>'
+    +Object.entries(cats).map(([cat,v])=>{
+      const maxW=Math.max(v.alloc,v.timer,0.1);const over=v.timer>v.alloc&&v.alloc>0;
+      return'<div style="margin-bottom:8px;">'
+        +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">'
+        +'<span style="color:var(--navy);font-weight:500;">'+cat+'</span>'
+        +'<span style="color:'+(over?'#dc2626':'var(--muted)')+';">'+v.timer.toFixed(1)+'h / '+v.alloc.toFixed(1)+'h'+(over?' \u2191 over':' ')+'</span>'
+        +'</div>'
+        +'<div style="height:6px;background:#e8eaf0;border-radius:3px;overflow:hidden;">'
+        +'<div style="height:100%;width:'+Math.min(100,v.alloc>0?Math.round(v.timer/v.alloc*100):0)+'%;background:'+(over?'#dc2626':'var(--navy)')+';border-radius:3px;"></div>'
+        +'</div></div>';
+    }).join('')
+    +'</div>';
+
+  // Contact
+  if(cl.email||cl.phone||cl.contact_person){
+    html+='<div style="padding:10px 16px;border-bottom:1px solid #f0f4ff;font-size:12px;display:flex;flex-wrap:wrap;gap:8px;">'
+      +(cl.contact_person?'<span style="color:var(--muted);">\uD83D\uDC64 '+cl.contact_person+'</span>':'')
+      +(cl.email?'<a href="mailto:'+cl.email+'" style="color:var(--teal);">\uD83D\uDCE7 '+cl.email+'</a>':'')
+      +(cl.phone?'<a href="tel:'+cl.phone+'" style="color:var(--teal);">\uD83D\uDCDE '+cl.phone+'</a>':'')
+      +'</div>';
   }
-  editIds.client=null;
-  closeModal('modal-client');
-  loadClientsPage();
-  populateClientSelects();
+
+  // Buttons
+  html+='<div style="padding:12px 16px;display:flex;gap:8px;">'
+    +'<button class="primary" style="flex:1;padding:10px;font-size:12px;" data-cid="'+id+'" onclick="editClient(this.dataset.cid)">\u270F\uFE0F Edit Client</button>'
+    +'<button style="flex:1;padding:10px;font-size:12px;" data-cname="'+cl.name.replace(/"/g,'&quot;')+'" onclick="viewClientTasks(this.dataset.cname)">\uD83D\uDCCB View All Tasks</button>'
+    +'</div></div>';
+
+  showPanel(cl.name,html);
 }
 
-// ── EMPLOYEE MASTER ──
-async function loadEmployeesPage(){
-  const c=document.getElementById('c-employees');
-  const {data}=await sb.from('employees').select('*').order('name');
-  c.innerHTML=`
-    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;color:var(--navy);">${(data||[]).length} Employees</div>
-      <button class="primary" onclick="openAddEmployee()">+ Add Employee</button>
-    </div>
-    <div class="table-wrap">
-      <table class="table"><thead><tr><th>Name</th><th>Role</th><th>Office</th><th class="hide-mobile">Department</th><th class="hide-mobile">Email</th><th>Status</th></tr></thead>
-        <tbody>${(data||[]).map(e=>`<tr>
-          <td style="font-weight:500;">${e.name}</td>
-          <td style="font-size:11px;">${e.role||''}</td>
-          <td>${pill(e.office==='Dubai'?'p-dubai':'p-calicut',e.office||'')}</td>
-          <td class="hide-mobile" style="font-size:11px;">${e.department||''}</td>
-          <td class="hide-mobile" style="font-size:11px;">${e.email||''}</td>
-          <td>${pill(e.status==='Active'?'p-done':'p-lost',e.status||'Active')}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>`;
-}
-
-// ── LOGO PLACEHOLDER ──
-const LOGO_B64='';
-</script>
-</body>
-</html>
