@@ -3695,37 +3695,145 @@ async function loadClientsPage(){
   c.innerHTML='<div style="color:var(--muted);padding:32px;text-align:center;">Loading...</div>';
   await populateStaffSelects();
   const {data}=await sb.from('clients').select('*').order('name');
-  c.innerHTML=`
-    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;color:var(--navy);">${(data||[]).length} Clients</div>
-      <button class="primary" onclick="openAddClient()">+ Add Client</button>
-    </div>
-    <div class="table-wrap">
-      <table class="table"><thead><tr><th>Company</th><th class="hide-mobile">Contact</th><th class="hide-mobile">Email</th><th class="hide-mobile">Phone</th><th>Status</th><th class="hide-mobile">Owner</th></tr></thead>
-        <tbody>${(data||[]).map(c_=>`<tr>
-          <td style="font-weight:500;">${c_.name}</td>
-          <td class="hide-mobile" style="font-size:11px;">${c_.contact_person||''}</td>
-          <td class="hide-mobile" style="font-size:11px;">${c_.email||''}</td>
-          <td class="hide-mobile" style="font-size:11px;">${c_.phone||''}</td>
-          <td>${pill(c_.status==='Active'?'p-done':'p-lost',c_.status||'Active')}</td>
-          <td class="hide-mobile" style="font-size:11px;">${c_.owner||''}</td>
-        </tr>`).join('')}</tbody>
-      </table>
-    </div>`;
+  const clients=data||[];
+  const active=clients.filter(c_=>c_.status==='Active').length;
+
+  let html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">'
+    +'<div style="display:flex;gap:10px;align-items:center;">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--navy);">'+clients.length+' Clients</div>'
+    +'<span class="pill p-done">'+active+' Active</span>'
+    +'<span class="pill p-lost">'+(clients.length-active)+' Inactive</span>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<input id="cl-search" placeholder="Search clients..." oninput="filterClientsList()" style="width:180px;">'
+    +'<select id="cl-filter-status" onchange="filterClientsList()" style="width:120px;"><option value="">All Status</option><option>Active</option><option>Inactive</option></select>'
+    +'<button class="primary" onclick="openAddClient()">+ Add Client</button>'
+    +'</div></div>'
+    +'<div class="table-wrap"><table class="table" id="clients-table">'
+    +'<thead><tr><th>Company</th><th class="hide-mobile">Contact</th><th class="hide-mobile">Email</th><th class="hide-mobile">Phone</th><th>Status</th><th>Owner</th><th></th></tr></thead>'
+    +'<tbody id="clients-tbody">'+renderClientRows(clients)+'</tbody>'
+    +'</table></div>';
+
+  c.innerHTML=html;
+}
+
+function renderClientRows(clients){
+  if(!clients.length)return'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px;">No clients found.</td></tr>';
+  return clients.map(c_=>{
+    const id=c_.id;
+    return'<tr>'
+    +'<td><div style="font-weight:600;cursor:pointer;color:var(--navy);" data-id="'+id+'" onclick="viewClient(this.dataset.id)">'
+    +c_.name+'</div>'
+    +(c_.since?'<div style="font-size:10px;color:var(--muted);">Since '+c_.since+'</div>':'')
+    +'</td>'
+    +'<td class="hide-mobile" style="font-size:11px;">'+(c_.contact_person||'—')+'</td>'
+    +'<td class="hide-mobile" style="font-size:11px;">'
+    +(c_.email?'<a href="mailto:'+c_.email+'" style="color:var(--teal);">'+c_.email+'</a>':'—')
+    +'</td>'
+    +'<td class="hide-mobile" style="font-size:11px;">'
+    +(c_.phone?'<a href="tel:'+c_.phone+'" style="color:var(--teal);">'+c_.phone+'</a>':'—')
+    +'</td>'
+    +'<td>'+pill(c_.status==='Active'?'p-done':'p-lost',c_.status||'Active')+'</td>'
+    +'<td style="font-size:11px;">'+(c_.owner||'<span style="color:#fca5a5;">Unassigned</span>')+'</td>'
+    +'<td><div style="display:flex;gap:4px;">'
+    +'<button class="sm" data-id="'+id+'" onclick="editClient(this.dataset.id)">✏️ Edit</button>'
+    +'<button class="sm" data-id="'+id+'" onclick="viewClient(this.dataset.id)">↗ View</button>'
+    +'</div></td>'
+    +'</tr>';
+  }).join('');
+}
+
+async function filterClientsList(){
+  const q=(document.getElementById('cl-search')?.value||'').toLowerCase();
+  const st=document.getElementById('cl-filter-status')?.value||'';
+  const {data}=await sb.from('clients').select('*').order('name');
+  let filtered=data||[];
+  if(q)filtered=filtered.filter(c_=>(c_.name||'').toLowerCase().includes(q)||(c_.contact_person||'').toLowerCase().includes(q)||(c_.owner||'').toLowerCase().includes(q));
+  if(st)filtered=filtered.filter(c_=>c_.status===st);
+  const tbody=document.getElementById('clients-tbody');
+  if(tbody)tbody.innerHTML=renderClientRows(filtered);
+}
+
+async function viewClient(id){
+  const {data:cl}=await sb.from('clients').select('*').eq('id',id).single();
+  const {data:tasks}=await sb.from('tasks').select('name,status,category,assigned_to,due_date').eq('client_name',cl.name).order('status');
+  const td=tasks||[];
+  const done=td.filter(t=>t.status==='Done').length;
+  showPanel(cl.name,
+    '<div style="padding:16px;">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">'
+    +'<div class="stat"><div class="stat-label">Status</div><div>'+pill(cl.status==='Active'?'p-done':'p-lost',cl.status||'')+'</div></div>'
+    +'<div class="stat"><div class="stat-label">Owner</div><div style="font-size:12px;font-weight:500;">'+(cl.owner||'Unassigned')+'</div></div>'
+    +'<div class="stat"><div class="stat-label">Contact</div><div style="font-size:12px;">'+(cl.contact_person||'—')+'</div></div>'
+    +'<div class="stat"><div class="stat-label">Since</div><div style="font-size:12px;">'+(cl.since||'—')+'</div></div>'
+    +'</div>'
+    +(cl.email?'<div style="margin-bottom:8px;font-size:12px;">📧 <a href="mailto:'+cl.email+'" style="color:var(--teal);">'+cl.email+'</a></div>':'')
+    +(cl.phone?'<div style="margin-bottom:12px;font-size:12px;">📞 <a href="tel:'+cl.phone+'" style="color:var(--teal);">'+cl.phone+'</a></div>':'')
+    +'<div style="display:flex;gap:8px;margin-bottom:16px;">'
+    +'<button class="primary sm" data-cid="'+id+'" onclick="editClient(this.dataset.cid)">✏️ Edit Client</button>'
+    +'<button class="sm" onclick="showPage(\'tasks\',null);setTimeout(()=>taskTab(\'list\',null),200)">📋 View Tasks</button>'
+    +'</div>'
+    +'<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">TASKS ('+td.length+') — '+done+' done</div>'
+    +td.slice(0,10).map(t=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f4ff;font-size:12px;">'
+      +pill(t.status==='Done'?'p-done':t.status==='Overdue'?'p-overdue':'p-pending',t.status||'')
+      +'<span style="flex:1;">'+t.name+'</span>'
+      +'<span style="font-size:10px;color:var(--muted);">'+( t.assigned_to||'')+'</span>'
+      +'</div>').join('')
+    +(td.length>10?'<div style="font-size:11px;color:var(--muted);padding:6px 0;">+' +(td.length-10)+' more tasks</div>':'')
+    +'</div>'
+  );
+}
+
+async function editClient(id){
+  const {data:cl}=await sb.from('clients').select('*').eq('id',id).single();
+  if(!cl)return;
+  // Pre-fill modal
+  document.getElementById('mcl-title').textContent='Edit Client';
+  document.getElementById('cl-name').value=cl.name||'';
+  document.getElementById('cl-contact').value=cl.contact_person||'';
+  document.getElementById('cl-email').value=cl.email||'';
+  document.getElementById('cl-phone').value=cl.phone||'';
+  document.getElementById('cl-status').value=cl.status||'Active';
+  document.getElementById('cl-since').value=cl.since||'';
+  // Set owner
+  await populateStaffSelects();
+  document.getElementById('cl-owner').value=cl.owner||'';
+  editIds.client=id;
+  openModal('modal-client');
 }
 
 async function openAddClient(){
-  await populateStaffSelects();editIds.client=null;
+  await populateStaffSelects();
+  editIds.client=null;
   document.getElementById('mcl-title').textContent='Add Client';
   ['cl-name','cl-contact','cl-email','cl-phone','cl-since'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('cl-status').value='Active';document.getElementById('cl-owner').value='';
+  document.getElementById('cl-status').value='Active';
+  document.getElementById('cl-owner').value='';
   openModal('modal-client');
 }
 
 async function saveClient(){
-  const name=document.getElementById('cl-name').value.trim();if(!name){alert('Company name required.');return;}
-  await sb.from('clients').insert({name,contact_person:document.getElementById('cl-contact').value,email:document.getElementById('cl-email').value,phone:document.getElementById('cl-phone').value,status:document.getElementById('cl-status').value,owner:document.getElementById('cl-owner').value,since:document.getElementById('cl-since').value||null});
-  closeModal('modal-client');toast('Client added!');loadClientsPage();populateClientSelects();
+  const name=document.getElementById('cl-name').value.trim();
+  if(!name){alert('Company name required.');return;}
+  const obj={name,
+    contact_person:document.getElementById('cl-contact').value,
+    email:document.getElementById('cl-email').value,
+    phone:document.getElementById('cl-phone').value,
+    status:document.getElementById('cl-status').value,
+    owner:document.getElementById('cl-owner').value,
+    since:document.getElementById('cl-since').value||null
+  };
+  if(editIds.client){
+    await sb.from('clients').update(obj).eq('id',editIds.client);
+    toast('Client updated!');
+  } else {
+    await sb.from('clients').insert(obj);
+    toast('Client added!');
+  }
+  editIds.client=null;
+  closeModal('modal-client');
+  loadClientsPage();
+  populateClientSelects();
 }
 
 // ── EMPLOYEE MASTER ──
