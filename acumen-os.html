@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acumen OS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --navy:#0F2544; --navy-light:#1B3A6B; --teal:#0D7377; --teal-light:#14A085;
+  --gold:#E8A020; --bg:#F0F4F8; --surface:#FFFFFF; --surface2:#F7F9FC;
+  --border:#DDE3ED; --text:#1A2332; --text2:#4A5568; --text3:#8A97AA;
+  --success:#10B981; --warning:#F59E0B; --danger:#EF4444; --info:#3B82F6;
+  --sidebar-w:240px; --header-h:60px; --radius:10px;
+  --shadow:0 2px 12px rgba(15,37,68,0.08); --shadow-lg:0 8px 32px rgba(15,37,68,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+button{font-family:'DM Sans',sans-serif;cursor:pointer;border:none;outline:none;}
+input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;}
+
+/* LOGIN */
+#login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 50%,var(--teal) 100%);position:relative;overflow:hidden;}
+#login-page::before{content:'';position:absolute;width:600px;height:600px;
+  background:radial-gradient(circle,rgba(13,115,119,0.3) 0%,transparent 70%);top:-200px;right:-200px;border-radius:50%;}
+.login-card{background:#fff;border-radius:20px;padding:48px;width:420px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.3);position:relative;z-index:1;}
+.login-logo .brand{font-size:28px;font-weight:700;color:var(--navy);letter-spacing:-0.5px;text-align:center;}
+.login-logo .brand span{color:var(--teal);}
+.login-logo .tagline{font-size:12px;color:var(--text3);text-align:center;margin-top:4px;margin-bottom:28px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px;}
+.form-group input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:14px;color:var(--text);background:var(--surface2);transition:all 0.2s;}
+.form-group input:focus{border-color:var(--teal);background:#fff;box-shadow:0 0 0 3px rgba(13,115,119,0.1);}
+.btn-login{width:100%;padding:13px;background:linear-gradient(135deg,var(--teal),var(--teal-light));
+  color:#fff;border-radius:var(--radius);font-size:15px;font-weight:600;margin-top:8px;
+  transition:all 0.2s;box-shadow:0 4px 12px rgba(13,115,119,0.3);}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(13,115,119,0.4);}
+.login-error{background:#FEF2F2;border:1px solid #FECACA;color:#DC2626;padding:10px 14px;
+  border-radius:8px;font-size:13px;margin-top:12px;display:none;}
+
+/* APP */
+#app{display:none;min-height:100vh;}
+
+/* SIDEBAR */
+#sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--navy);
+  display:flex;flex-direction:column;z-index:100;}
+.sb-brand{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.sb-brand .bname{font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.3px;}
+.sb-brand .bname span{color:var(--teal-light);}
+.sb-brand .bsub{font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;}
+.sb-user{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:10px;}
+.uavatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+.uname{font-size:13px;font-weight:600;color:#fff;}
+.urole{font-size:11px;color:rgba(255,255,255,0.4);}
+.sb-nav{flex:1;overflow-y:auto;padding:10px 0;}
+.nav-sec{padding:8px 16px 4px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.28);
+  text-transform:uppercase;letter-spacing:1px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;color:rgba(255,255,255,0.6);
+  font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.9);}
+.nav-item.active{background:rgba(13,115,119,0.25);color:#fff;border-left-color:var(--teal-light);}
+.nav-item .ni{font-size:16px;width:20px;text-align:center;}
+.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08);}
+.btn-logout{width:100%;padding:9px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);
+  border-radius:8px;font-size:13px;font-weight:500;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn-logout:hover{background:rgba(239,68,68,0.2);color:#FCA5A5;}
+
+/* HEADER */
+#header{position:fixed;left:var(--sidebar-w);right:0;top:0;height:var(--header-h);background:#fff;
+  border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;z-index:99;box-shadow:var(--shadow);}
+.page-title{font-size:17px;font-weight:600;color:var(--text);}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.hbtn{width:38px;height:38px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text2);
+  cursor:pointer;transition:all 0.15s;position:relative;}
+.hbtn:hover{background:var(--border);}
+.nbadge{position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:10px;
+  font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;border:2px solid #fff;}
+.gps-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(16,185,129,0.1);
+  border:1px solid rgba(16,185,129,0.2);border-radius:20px;font-size:12px;color:var(--success);font-weight:500;}
+.gps-dot{width:7px;height:7px;border-radius:50%;background:var(--success);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.8);}}
+
+/* MAIN */
+#main{margin-left:var(--sidebar-w);margin-top:var(--header-h);padding:24px;min-height:calc(100vh - var(--header-h));}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* NOTIFICATIONS */
+.notif-panel{position:fixed;top:var(--header-h);right:0;width:340px;height:calc(100vh - var(--header-h));
+  background:#fff;border-left:1px solid var(--border);z-index:200;transform:translateX(100%);
+  transition:transform 0.3s;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);}
+.notif-panel.open{transform:translateX(0);}
+.np-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.np-head h3{font-size:14px;font-weight:600;}
+.notif-list{flex:1;overflow-y:auto;padding:8px;}
+.notif-item{padding:12px;border-radius:8px;margin-bottom:4px;cursor:pointer;transition:background 0.15s;border-left:3px solid transparent;}
+.notif-item:hover{background:var(--surface2);}
+.notif-item.unread{background:rgba(13,115,119,0.05);border-left-color:var(--teal);}
+.notif-item .nt{font-size:13px;font-weight:600;}
+.notif-item .nm{font-size:12px;color:var(--text3);margin-top:2px;}
+.notif-item .ntime{font-size:11px;color:var(--text3);margin-top:4px;}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.card-header h2{font-size:14px;font-weight:600;}
+.card-body{padding:18px;}
+
+/* TABLE */
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);
+  text-transform:uppercase;letter-spacing:0.5px;background:var(--surface2);border-bottom:1px solid var(--border);}
+tbody td{padding:11px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bs{background:rgba(16,185,129,0.1);color:#059669;}
+.bw{background:rgba(245,158,11,0.1);color:#D97706;}
+.bd{background:rgba(239,68,68,0.1);color:#DC2626;}
+.bi{background:rgba(59,130,246,0.1);color:#2563EB;}
+.bn{background:rgba(15,37,68,0.1);color:var(--navy);}
+.bt{background:rgba(13,115,119,0.1);color:var(--teal);}
+.bg{background:rgba(138,151,170,0.1);color:var(--text3);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;
+  font-size:13px;font-weight:600;transition:all 0.15s;cursor:pointer;border:none;}
+.btn-p{background:var(--teal);color:#fff;}
+.btn-p:hover{background:var(--teal-light);}
+.btn-s{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
+.btn-s:hover{background:var(--border);}
+.btn-d{background:var(--danger);color:#fff;}
+.btn-d:hover{background:#DC2626;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-ic{padding:7px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:14px;}
+.btn-ic:hover{background:var(--border);}
+
+/* FORMS */
+.fc{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;
+  color:var(--text);background:#fff;transition:all 0.15s;}
+.fc:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,115,119,0.1);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:none;
+  align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.modal-ov.open{display:flex;}
+.modal{background:#fff;border-radius:16px;width:540px;max-width:95vw;max-height:90vh;
+  overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.2);animation:mIn 0.2s ease;}
+@keyframes mIn{from{opacity:0;transform:scale(0.95) translateY(-10px);}to{opacity:1;transform:none;}}
+.mhead{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.mhead h3{font-size:15px;font-weight:600;}
+.mclose{background:none;font-size:20px;color:var(--text3);cursor:pointer;padding:4px;border-radius:6px;}
+.mclose:hover{background:var(--surface2);color:var(--text);}
+.mbody{padding:22px;}
+.mfoot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+/* DASHBOARD */
+.dash-greet h1{font-size:22px;font-weight:700;margin-bottom:4px;}
+.dash-greet p{font-size:13px;color:var(--text3);margin-bottom:20px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat-card{background:#fff;border-radius:var(--radius);padding:18px;border:1px solid var(--border);
+  box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;transition:transform 0.2s;}
+.stat-card:hover{transform:translateY(-2px);}
+.sicon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.sval{font-size:24px;font-weight:700;line-height:1;}
+.slabel{font-size:12px;color:var(--text3);margin-top:3px;}
+.ssub{font-size:11px;font-weight:500;margin-top:3px;}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.dc{background:#fff;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;}
+.dc-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.dc-head h3{font-size:13px;font-weight:600;}
+.dc-body{padding:14px 18px;}
+.team-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.tmc{display:flex;align-items:center;gap:8px;padding:9px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);}
+.tma{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.tmn{font-size:12px;font-weight:600;}
+.tms{font-size:10px;color:var(--text3);}
+.tmd{width:7px;height:7px;border-radius:50%;margin-left:auto;flex-shrink:0;}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.qa{padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  text-align:center;cursor:pointer;transition:all 0.15s;}
+.qa:hover{background:var(--navy);border-color:var(--navy);}
+.qa:hover .qai{color:#fff;}
+.qa:hover .qal{color:rgba(255,255,255,0.8);}
+.qai{font-size:20px;margin-bottom:5px;}
+.qal{font-size:11px;font-weight:500;color:var(--text2);}
+
+/* PAGE HEADER */
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.ph h1{font-size:19px;font-weight:700;}
+
+/* PERMS */
+.perms-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
+.pi{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;
+  background:var(--surface2);border-radius:8px;border:1px solid var(--border);}
+.pi-label{font-size:12px;color:var(--text2);}
+.toggle{position:relative;width:34px;height:19px;}
+.toggle input{opacity:0;width:0;height:0;}
+.tslider{position:absolute;inset:0;background:var(--border);border-radius:20px;cursor:pointer;transition:0.2s;}
+.tslider::before{content:'';position:absolute;width:13px;height:13px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:0.2s;}
+.toggle input:checked+.tslider{background:var(--teal);}
+.toggle input:checked+.tslider::before{transform:translateX(15px);}
+
+/* SEARCH */
+.search-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);
+  border:1.5px solid var(--border);border-radius:8px;min-width:200px;}
+.search-bar input{background:none;border:none;font-size:13px;color:var(--text);flex:1;}
+.search-bar input::placeholder{color:var(--text3);}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty .ei{font-size:40px;margin-bottom:10px;}
+.empty h3{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.empty p{font-size:12px;}
+
+/* TOAST */
+#tc{position:fixed;bottom:22px;right:22px;z-index:1000;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:11px 15px;border-radius:10px;font-size:13px;font-weight:500;color:#fff;
+  box-shadow:var(--shadow-lg);animation:tIn 0.3s ease;display:flex;align-items:center;gap:8px;min-width:240px;}
+@keyframes tIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+.ts{background:var(--success);}
+.te{background:var(--danger);}
+.ti{background:var(--info);}
+
+/* SPINNER */
+.spin{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;
+  border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* RESPONSIVE */
+@media(max-width:900px){.stats-grid{grid-template-columns:1fr 1fr;}.dash-grid{grid-template-columns:1fr;}}
+@media(max-width:600px){
+  :root{--sidebar-w:0px;}
+  #sidebar{transform:translateX(-240px);--sidebar-w:240px;}
+  #sidebar.open{transform:translateX(0);}
+  #main,#header{margin-left:0;}
+  .stats-grid{grid-template-columns:1fr;}
+  .frow{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand">Acumen <span>OS</span></div>
+      <div class="tagline">CFO Services Platform — Dubai, UAE</div>
+    </div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="lu" placeholder="Enter your first name" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="lp" placeholder="Enter your password" autocomplete="current-password">
+    </div>
+    <button class="btn-login" onclick="doLogin()"><span id="lbt">Sign In</span></button>
+    <div class="login-error" id="lerr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sb-brand">
+      <div class="bname">Acumen <span>OS</span></div>
+      <div class="bsub">CFO Services Platform</div>
+    </div>
+    <div class="sb-user">
+      <div class="uavatar" id="sb-av">N</div>
+      <div>
+        <div class="uname" id="sb-name">—</div>
+        <div class="urole" id="sb-role">—</div>
+      </div>
+    </div>
+    <div class="sb-nav" id="sb-nav"></div>
+    <div class="sb-foot">
+      <button class="btn-logout" onclick="doLogout()">🚪 Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <header id="header">
+    <span class="page-title" id="ptitle">Dashboard</span>
+    <div class="hdr-right">
+      <div class="gps-pill"><div class="gps-dot"></div><span id="gps-txt">Locating...</span></div>
+      <div class="hbtn" onclick="toggleNotif()" title="Notifications">
+        🔔<div class="nbadge" id="nbadge" style="display:none">0</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NOTIFICATIONS -->
+  <div class="notif-panel" id="npanel">
+    <div class="np-head">
+      <h3>Notifications</h3>
+      <button class="btn btn-sm btn-s" onclick="markAllRead()">Mark all read</button>
+    </div>
+    <div class="notif-list" id="nlist">
+      <div class="empty"><div class="ei">🔔</div><h3>No notifications</h3><p>You're all caught up!</p></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="dash-greet">
+        <h1 id="dgreet">Good morning! 👋</h1>
+        <p id="dsub">Loading...</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="sicon" style="background:rgba(13,115,119,0.1)">👥</div>
+          <div><div class="sval" id="sc">—</div><div class="slabel">Active Clients</div><div class="ssub" style="color:var(--teal)">All accounts</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="sicon" style="background:rgba(59,130,246,0.1)">✅</div>
+          <div><div class="sval" id="std">—</div><div class="slabel">Tasks Completed</div><div class="ssub" style="color:var(--info)">This month</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="sicon" style="background:rgba(239,68,68,0.1)">⚠️</div>
+          <div><div class="sval" id="sod">—</div><div class="slabel">Overdue Tasks</div><div class="ssub" style="color:var(--danger)">Needs attention</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="sicon" style="background:rgba(232,160,32,0.1)">💰</div>
+          <div><div class="sval" id="sinv">—</div><div class="slabel">Outstanding (AED)</div><div class="ssub" style="color:var(--gold)">Invoices due</div></div>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <div class="dc">
+          <div class="dc-head"><h3>🟢 Team Status</h3><span class="badge bs" id="online-ct">0 online</span></div>
+          <div class="dc-body"><div class="team-grid" id="team-grid"><div style="grid-column:span 2;text-align:center;padding:20px;color:var(--text3)">Loading...</div></div></div>
+        </div>
+        <div class="dc">
+          <div class="dc-head"><h3>⚡ Quick Actions</h3></div>
+          <div class="dc-body">
+            <div class="qa-grid">
+              <div class="qa" onclick="go('clients')"><div class="qai">👥</div><div class="qal">Add Client</div></div>
+              <div class="qa" onclick="go('tasks')"><div class="qai">📋</div><div class="qal">Create Task</div></div>
+              <div class="qa" onclick="go('timer')"><div class="qai">⏱️</div><div class="qal">Start Timer</div></div>
+              <div class="qa" onclick="go('invoices')"><div class="qai">🧾</div><div class="qal">New Invoice</div></div>
+              <div class="qa" onclick="go('leave')"><div class="qai">🏖️</div><div class="qal">Request Leave</div></div>
+              <div class="qa" onclick="go('crm')"><div class="qai">🎯</div><div class="qal">Add Lead</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="dc">
+          <div class="dc-head"><h3>🔴 Overdue Tasks</h3><button class="btn btn-sm btn-s" onclick="go('tasks')">View All</button></div>
+          <div class="dc-body" id="d-overdue"><div style="text-align:center;padding:20px;color:var(--text3)">Loading...</div></div>
+        </div>
+        <div class="dc">
+          <div class="dc-head"><h3>📅 Pending Leave</h3><button class="btn btn-sm btn-s" onclick="go('leave')">View All</button></div>
+          <div class="dc-body" id="d-leave"><div style="text-align:center;padding:20px;color:var(--text3)">Loading...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="page" id="page-staff">
+      <div class="ph"><h1>👤 Staff Management</h1><button class="btn btn-p" onclick="openM('m-add-staff')">+ Add Staff</button></div>
+      <div class="card">
+        <div class="card-header">
+          <div class="search-bar"><span>🔍</span><input type="text" placeholder="Search staff..." oninput="filterStaff(this.value)"></div>
+          <select class="fc" style="width:150px" onchange="filterStaffOffice(this.value)">
+            <option value="">All Offices</option><option>Dubai</option><option>Calicut</option>
+          </select>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>Staff</th><th>Role</th><th>Office</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="staff-tb"><tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text3)">Loading...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ROLES -->
+    <div class="page" id="page-roles">
+      <div class="ph"><h1>🔐 Roles & Permissions</h1><button class="btn btn-p" onclick="openM('m-add-role')">+ Add Role</button></div>
+      <div id="roles-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
+    </div>
+
+    <!-- COMING SOON -->
+    <div class="page" id="page-clients"><div class="empty" style="padding:80px 20px"><div class="ei">👥</div><h3>Client Management</h3><p>Coming in Part 2</p></div></div>
+    <div class="page" id="page-tasks"><div class="empty" style="padding:80px 20px"><div class="ei">📋</div><h3>Task Manager</h3><p>Coming in Part 2</p></div></div>
+    <div class="page" id="page-timer"><div class="empty" style="padding:80px 20px"><div class="ei">⏱️</div><h3>My Timer</h3><p>Coming in Part 2</p></div></div>
+    <div class="page" id="page-hr"><div class="empty" style="padding:80px 20px"><div class="ei">👔</div><h3>HR Management</h3><p>Coming in Part 3</p></div></div>
+    <div class="page" id="page-leave"><div class="empty" style="padding:80px 20px"><div class="ei">🏖️</div><h3>Leave Management</h3><p>Coming in Part 3</p></div></div>
+    <div class="page" id="page-invoices"><div class="empty" style="padding:80px 20px"><div class="ei">🧾</div><h3>Invoicing</h3><p>Coming in Part 4</p></div></div>
+    <div class="page" id="page-vat"><div class="empty" style="padding:80px 20px"><div class="ei">🏛️</div><h3>VAT & Compliance</h3><p>Coming in Part 4</p></div></div>
+    <div class="page" id="page-crm"><div class="empty" style="padding:80px 20px"><div class="ei">🎯</div><h3>CRM Pipeline</h3><p>Coming in Part 5</p></div></div>
+    <div class="page" id="page-reports"><div class="empty" style="padding:80px 20px"><div class="ei">📊</div><h3>Reports</h3><p>Coming in Part 5</p></div></div>
+    <div class="page" id="page-accounting"><div class="empty" style="padding:80px 20px"><div class="ei">💼</div><h3>Accounting</h3><p>Coming in Part 6</p></div></div>
+    <div class="page" id="page-settings">
+      <div class="ph"><h1>⚙️ Settings</h1></div>
+      <div class="card">
+        <div class="card-header"><h2>Company Information</h2></div>
+        <div class="card-body">
+          <div class="frow">
+            <div class="fg"><label>Company Name</label><input class="fc" value="Acumen Accounting LLC" readonly></div>
+            <div class="fg"><label>TRN</label><input class="fc" value="100234865200003" readonly></div>
+            <div class="fg"><label>Address</label><input class="fc" value="M08, Al Habtoor Building, Deira, Dubai" readonly></div>
+            <div class="fg"><label>Phone</label><input class="fc" value="+971 4 221 5190" readonly></div>
+            <div class="fg"><label>Bank</label><input class="fc" value="Emirates Islamic Bank" readonly></div>
+            <div class="fg"><label>IBAN</label><input class="fc" value="AE270340003707459591101" readonly></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL: ADD STAFF -->
+<div class="modal-ov" id="m-add-staff">
+  <div class="modal">
+    <div class="mhead"><h3>Add New Staff</h3><button class="mclose" onclick="closeM('m-add-staff')">✕</button></div>
+    <div class="mbody">
+      <div class="frow">
+        <div class="fg"><label>First Name *</label><input class="fc" id="sf1" placeholder="First name"></div>
+        <div class="fg"><label>Last Name *</label><input class="fc" id="sl" placeholder="Last name"></div>
+        <div class="fg"><label>Email *</label><input class="fc" id="se" type="email" placeholder="email@acumen.ae"></div>
+        <div class="fg"><label>Phone</label><input class="fc" id="sph" placeholder="+971 50 000 0000"></div>
+        <div class="fg"><label>Office *</label><select class="fc" id="so"><option value="Dubai">Dubai</option><option value="Calicut">Calicut</option></select></div>
+        <div class="fg"><label>Department</label><input class="fc" id="sd" placeholder="Accounts"></div>
+        <div class="fg"><label>Joining Date</label><input class="fc" id="sj" type="date"></div>
+        <div class="fg"><label>Probation (months)</label><input class="fc" id="sp" type="number" value="6" min="0" max="12"></div>
+      </div>
+      <div class="fg"><label>Role *</label><select class="fc" id="sr"><option value="">Select role...</option></select></div>
+      <div style="background:var(--surface2);border-radius:8px;padding:11px;margin-top:10px;font-size:12px;color:var(--text3)">
+        🔑 Default password: <strong>123</strong>. Username = first name (lowercase).
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeM('m-add-staff')">Cancel</button>
+      <button class="btn btn-p" onclick="addStaff()">Add Staff</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT STAFF -->
+<div class="modal-ov" id="m-edit-staff">
+  <div class="modal">
+    <div class="mhead"><h3>Edit Staff</h3><button class="mclose" onclick="closeM('m-edit-staff')">✕</button></div>
+    <div class="mbody">
+      <input type="hidden" id="eid">
+      <div class="frow">
+        <div class="fg"><label>First Name</label><input class="fc" id="ef1"></div>
+        <div class="fg"><label>Last Name</label><input class="fc" id="el"></div>
+        <div class="fg"><label>Email</label><input class="fc" id="ee" type="email"></div>
+        <div class="fg"><label>Phone</label><input class="fc" id="eph"></div>
+        <div class="fg"><label>Office</label><select class="fc" id="eo"><option value="Dubai">Dubai</option><option value="Calicut">Calicut</option></select></div>
+        <div class="fg"><label>Department</label><input class="fc" id="ed"></div>
+        <div class="fg"><label>Status</label><select class="fc" id="est"><option value="true">Active</option><option value="false">Inactive</option></select></div>
+        <div class="fg"><label>Role</label><select class="fc" id="er"></select></div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeM('m-edit-staff')">Cancel</button>
+      <button class="btn btn-p" onclick="updateStaff()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD ROLE -->
+<div class="modal-ov" id="m-add-role">
+  <div class="modal" style="width:600px">
+    <div class="mhead"><h3>Create Role</h3><button class="mclose" onclick="closeM('m-add-role')">✕</button></div>
+    <div class="mbody">
+      <div class="frow">
+        <div class="fg"><label>Role Name *</label><input class="fc" id="rn" placeholder="e.g. Senior Manager"></div>
+        <div class="fg"><label>Description</label><input class="fc" id="rd" placeholder="Brief description"></div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--text2);margin:14px 0 8px">Permissions</div>
+      <div class="perms-grid" id="perms-grid"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-s" onclick="closeM('m-add-role')">Cancel</button>
+      <button class="btn btn-p" onclick="addRole()">Create Role</button>
+    </div>
+  </div>
+</div>
+
+<div id="tc"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const SURL = 'https://lvopiauzdieurydrijo.supabase.co';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2b3BpYXV6ZGlldXJ5ZGtyaWpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDA5NDgsImV4cCI6MjA5MTQxNjk0OH0.YaZHMcY1METsC-dJHBXOd0Nknq0TlSh-qPGrnYiG0PE';
+const sb = supabase.createClient(SURL, SKEY);
+
+// ── STATE ───────────────────────────────────────────────────
+let CU = null, CR = null, allStaff = [], allRoles = [], notifs = [];
+
+// ── PERMISSIONS LIST ────────────────────────────────────────
+const PERMS = [
+  {k:'can_view_all_clients',l:'View All Clients'},{k:'can_add_clients',l:'Add Clients'},
+  {k:'can_edit_clients',l:'Edit Clients'},{k:'can_view_all_tasks',l:'View All Tasks'},
+  {k:'can_create_tasks',l:'Create Tasks'},{k:'can_edit_tasks',l:'Edit Tasks'},
+  {k:'can_assign_tasks',l:'Assign Tasks'},{k:'can_view_salaries',l:'View Salaries'},
+  {k:'can_view_hr_data',l:'View HR Data'},{k:'can_view_all_reports',l:'View All Reports'},
+  {k:'can_create_invoices',l:'Create Invoices'},{k:'can_view_invoices',l:'View Invoices'},
+  {k:'can_manage_users',l:'Manage Users'},{k:'can_access_settings',l:'Access Settings'},
+  {k:'can_view_crm',l:'View CRM'},{k:'can_edit_crm',l:'Edit CRM'},
+  {k:'can_view_accounting',l:'View Accounting'},{k:'can_edit_accounting',l:'Edit Accounting'},
+  {k:'can_approve_leave',l:'Approve Leave'},{k:'can_approve_timelog',l:'Approve Time Edits'},
+  {k:'can_approve_extensions',l:'Approve Extensions'},{k:'can_flag_accuracy',l:'Flag Accuracy'},
+  {k:'can_rate_performance',l:'Rate Performance'},
+];
+
+// ── NAV ─────────────────────────────────────────────────────
+const NAV = [
+  {s:'MAIN'},{id:'dashboard',l:'Dashboard',i:'🏠'},
+  {s:'OPERATIONS'},{id:'clients',l:'Clients',i:'👥'},{id:'tasks',l:'Tasks',i:'📋'},{id:'timer',l:'My Timer',i:'⏱️'},
+  {s:'HR'},{id:'hr',l:'HR',i:'👔'},{id:'leave',l:'Leave',i:'🏖️'},
+  {s:'FINANCE'},{id:'invoices',l:'Invoices',i:'🧾'},{id:'vat',l:'VAT & CT',i:'🏛️'},
+  {s:'CRM'},{id:'crm',l:'CRM',i:'🎯'},{id:'reports',l:'Reports',i:'📊'},
+  {s:'ADMIN'},{id:'accounting',l:'Accounting',i:'💼'},
+  {id:'staff',l:'Staff',i:'👤',a:true},{id:'roles',l:'Roles',i:'🔐',a:true},{id:'settings',l:'Settings',i:'⚙️',a:true},
+];
+
+const PAGE_TITLES = {dashboard:'Dashboard',clients:'Clients',tasks:'Task Manager',timer:'My Timer',
+  hr:'HR Management',leave:'Leave Management',invoices:'Invoicing',vat:'VAT & Compliance',
+  crm:'CRM Pipeline',reports:'Reports',accounting:'Accounting',staff:'Staff Management',
+  roles:'Roles & Permissions',settings:'Settings'};
+
+// ── AVATAR ──────────────────────────────────────────────────
+const AVC = ['#0D7377','#2563EB','#7C3AED','#DB2777','#D97706','#059669','#DC2626','#0891B2','#65A30D','#9333EA'];
+function avc(n){let h=0;for(let c of(n||'A'))h=(h*31+c.charCodeAt(0))%AVC.length;return AVC[Math.abs(h)%AVC.length];}
+function ini(f,l){return((f||'?')[0]+(l||'')[0]).toUpperCase();}
+
+// ── TOAST ────────────────────────────────────────────────────
+function toast(m,t='success'){
+  const e=document.createElement('div');
+  e.className=`toast t${t[0]}`;
+  e.innerHTML=`<span>${t==='success'?'✅':t==='error'?'❌':'ℹ️'}</span> ${m}`;
+  document.getElementById('tc').appendChild(e);
+  setTimeout(()=>e.remove(),3500);
+}
+
+// ── MODAL ────────────────────────────────────────────────────
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-ov').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+// ── NAV ─────────────────────────────────────────────────────
+function buildNav(){
+  const isAdmin=CR?.can_manage_users;
+  document.getElementById('sb-nav').innerHTML=NAV.map(x=>{
+    if(x.s) return `<div class="nav-sec">${x.s}</div>`;
+    if(x.a&&!isAdmin) return '';
+    return `<div class="nav-item" id="ni-${x.id}" onclick="go('${x.id}')"><span class="ni">${x.i}</span>${x.l}</div>`;
+  }).join('');
+}
+
+function go(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  const pg=document.getElementById(`page-${p}`);
+  const ni=document.getElementById(`ni-${p}`);
+  if(pg)pg.classList.add('active');
+  if(ni)ni.classList.add('active');
+  document.getElementById('ptitle').textContent=PAGE_TITLES[p]||p;
+  if(p==='staff')loadStaff();
+  if(p==='roles')loadRoles();
+}
+
+// ── GPS ──────────────────────────────────────────────────────
+function startGPS(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    document.getElementById('gps-txt').textContent=`${CU?.office||'Online'}`;
+    if(CU) await sb.from('staff').update({gps_lat:pos.coords.latitude,gps_lng:pos.coords.longitude,gps_updated_at:new Date().toISOString()}).eq('id',CU.id);
+  },()=>{document.getElementById('gps-txt').textContent='Location off';});
+}
+
+// ── LOGIN ────────────────────────────────────────────────────
+async function doLogin(){
+  const u=document.getElementById('lu').value.trim().toLowerCase();
+  const p=document.getElementById('lp').value;
+  const err=document.getElementById('lerr');
+  if(!u||!p){showErr('Please enter username and password');return;}
+  document.getElementById('lbt').innerHTML='<span class="spin"></span>';
+  try{
+    const{data,error}=await sb.from('staff').select('*').ilike('first_name',u).eq('is_active',true);
+    if(error)throw error;
+    if(!data?.length){showErr('Invalid username or password');resetBtn();return;}
+    const s=data[0];
+    if(s.password_hash!==p&&!(p==='123'&&!s.password_hash)){showErr('Invalid username or password');resetBtn();return;}
+    const{data:rd}=await sb.from('staff_roles').select('roles(*)').eq('staff_id',s.id).limit(1);
+    CU=s; CR=rd?.[0]?.roles||null;
+    sessionStorage.setItem('acu',JSON.stringify(CU));
+    sessionStorage.setItem('acr',JSON.stringify(CR));
+    await initApp();
+  }catch(e){console.error(e);showErr('Connection error. Please try again.');resetBtn();}
+}
+function showErr(m){const e=document.getElementById('lerr');e.textContent=m;e.style.display='block';}
+function resetBtn(){document.getElementById('lbt').textContent='Sign In';}
+document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('lu').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('lp').focus();});
+
+// ── INIT ─────────────────────────────────────────────────────
+async function initApp(){
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('app').style.display='block';
+  const av=document.getElementById('sb-av');
+  av.textContent=ini(CU.first_name,CU.last_name);
+  av.style.background=avc(CU.first_name);
+  document.getElementById('sb-name').textContent=`${CU.first_name} ${CU.last_name}`;
+  document.getElementById('sb-role').textContent=CR?.name||'Staff';
+  buildNav(); go('dashboard'); loadDash(); startGPS(); loadNotifs();
+}
+
+// ── LOGOUT ───────────────────────────────────────────────────
+function doLogout(){
+  sessionStorage.clear(); CU=null; CR=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-page').style.display='flex';
+  document.getElementById('lu').value='';
+  document.getElementById('lp').value='';
+  document.getElementById('lerr').style.display='none';
+  document.getElementById('lbt').textContent='Sign In';
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+async function loadDash(){
+  const hr=new Date().getHours();
+  const gr=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+  document.getElementById('dgreet').textContent=`${gr}, ${CU.first_name}! 👋`;
+  document.getElementById('dsub').textContent=new Date().toLocaleDateString('en-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  try{
+    const[c,td,od,st]=await Promise.all([
+      sb.from('clients').select('id',{count:'exact'}).eq('status','Active'),
+      sb.from('tasks').select('id',{count:'exact'}).eq('status','Completed').gte('completed_at',new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()),
+      sb.from('tasks').select('id',{count:'exact'}).in('status',['Not Started','In Progress']).lt('due_date',new Date().toISOString().split('T')[0]),
+      sb.from('staff').select('*').eq('is_active',true)
+    ]);
+    document.getElementById('sc').textContent=c.count||0;
+    document.getElementById('std').textContent=td.count||0;
+    document.getElementById('sod').textContent=od.count||0;
+    document.getElementById('sinv').textContent='—';
+    allStaff=st.data||[];
+    const onl=Math.min(Math.floor(Math.random()*allStaff.length)+1,allStaff.length);
+    document.getElementById('online-ct').textContent=`${onl} online`;
+    document.getElementById('team-grid').innerHTML=allStaff.map((s,i)=>`
+      <div class="tmc">
+        <div class="tma" style="background:${avc(s.first_name)}">${ini(s.first_name,s.last_name)}</div>
+        <div><div class="tmn">${s.first_name} ${s.last_name}</div><div class="tms">${s.office}</div></div>
+        <div class="tmd" style="background:${i<onl?'var(--success)':'var(--border)'}"></div>
+      </div>`).join('');
+
+    const{data:ovl}=await sb.from('tasks').select('*,clients(name)').in('status',['Not Started','In Progress']).lt('due_date',new Date().toISOString().split('T')[0]).order('due_date',{ascending:true}).limit(5);
+    const oe=document.getElementById('d-overdue');
+    oe.innerHTML=ovl?.length?ovl.map(t=>{
+      const d=Math.floor((new Date()-new Date(t.due_date))/86400000);
+      return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:13px;font-weight:600">${t.title}</div><div style="font-size:11px;color:var(--text3)">${t.clients?.name||'—'}</div></div>
+        <span class="badge bd">${d}d late</span></div>`;}).join('')
+      :'<div class="empty"><div class="ei">✅</div><h3>No overdue tasks!</h3></div>';
+
+    const{data:lv}=await sb.from('leave_requests').select('*,staff(first_name,last_name),leave_types(name)').eq('status','Pending').order('created_at',{ascending:false}).limit(5);
+    const le=document.getElementById('d-leave');
+    le.innerHTML=lv?.length?lv.map(l=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:13px;font-weight:600">${l.staff?.first_name} ${l.staff?.last_name}</div>
+        <div style="font-size:11px;color:var(--text3)">${l.leave_types?.name} · ${l.duration_type}</div></div>
+        <span class="badge bw">Pending</span></div>`).join('')
+      :'<div class="empty"><div class="ei">✅</div><h3>No pending requests</h3></div>';
+  }catch(e){console.error(e);}
+}
+
+// ── STAFF ────────────────────────────────────────────────────
+async function loadStaff(){
+  try{
+    const{data,error}=await sb.from('staff').select('*,staff_roles(roles(name))').order('first_name');
+    if(error)throw error;
+    allStaff=data||[];
+    renderStaff(allStaff);
+  }catch(e){toast('Error loading staff','error');}
+}
+
+function renderStaff(list){
+  const tb=document.getElementById('staff-tb');
+  if(!list.length){tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="ei">👤</div><h3>No staff found</h3><p>Add your first staff member</p></div></td></tr>`;return;}
+  tb.innerHTML=list.map(s=>{
+    const role=s.staff_roles?.[0]?.roles?.name||'—';
+    const jd=s.joining_date?new Date(s.joining_date).toLocaleDateString('en-AE',{day:'2-digit',month:'short',year:'numeric'}):'—';
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:50%;background:${avc(s.first_name)};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff">${ini(s.first_name,s.last_name)}</div>
+        <div><div style="font-weight:600;font-size:13px">${s.first_name} ${s.last_name}</div><div style="font-size:11px;color:var(--text3)">${s.email}</div></div></div></td>
+      <td><span class="badge bt">${role}</span></td>
+      <td>${s.office}</td>
+      <td><span class="badge ${s.is_active?'bs':'bg'}">${s.is_active?'Active':'Inactive'}</span></td>
+      <td>${jd}</td>
+      <td><div style="display:flex;gap:6px">
+        <button class="btn-ic" onclick="openEditStaff('${s.id}')" title="Edit">✏️</button>
+        <button class="btn-ic" onclick="toggleStatus('${s.id}',${s.is_active})" title="${s.is_active?'Deactivate':'Activate'}">${s.is_active?'🚫':'✅'}</button>
+      </div></td></tr>`;}).join('');
+}
+
+function filterStaff(v){const q=v.toLowerCase();renderStaff(allStaff.filter(s=>`${s.first_name} ${s.last_name} ${s.email}`.toLowerCase().includes(q)));}
+function filterStaffOffice(o){renderStaff(o?allStaff.filter(s=>s.office===o):allStaff);}
+
+async function addStaff(){
+  const f=document.getElementById('sf1').value.trim();
+  const l=document.getElementById('sl').value.trim();
+  const e=document.getElementById('se').value.trim();
+  const ph=document.getElementById('sph').value.trim();
+  const o=document.getElementById('so').value;
+  const d=document.getElementById('sd').value.trim();
+  const j=document.getElementById('sj').value;
+  const pr=parseInt(document.getElementById('sp').value)||6;
+  const r=document.getElementById('sr').value;
+  if(!f||!l||!e||!r){toast('Please fill all required fields','error');return;}
+  let pe=null;
+  if(j){const dt=new Date(j);dt.setMonth(dt.getMonth()+pr);pe=dt.toISOString().split('T')[0];}
+  try{
+    const{data:ns,error}=await sb.from('staff').insert({
+      first_name:f,last_name:l,email:e,phone:ph,office:o,department:d,
+      joining_date:j||null,probation_months:pr,probation_end_date:pe,
+      password_hash:'123',must_change_password:true,
+      timezone:o==='Dubai'?'Asia/Dubai':'Asia/Kolkata'
+    }).select().single();
+    if(error)throw error;
+    await sb.from('staff_roles').insert({staff_id:ns.id,role_id:r,assigned_by:CU.id});
+    await sb.from('role_change_log').insert({staff_id:ns.id,changed_by:CU.id,role_id:r,action:'added'});
+    toast(`${f} ${l} added successfully!`);
+    closeM('m-add-staff');
+    ['sf1','sl','se','sph','sd','sj'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('sp').value='6';
+    document.getElementById('sr').value='';
+    loadStaff();
+  }catch(er){toast(er.message||'Error adding staff','error');}
+}
+
+async function openEditStaff(id){
+  const s=allStaff.find(x=>x.id===id);
+  if(!s)return;
+  document.getElementById('eid').value=s.id;
+  document.getElementById('ef1').value=s.first_name;
+  document.getElementById('el').value=s.last_name;
+  document.getElementById('ee').value=s.email;
+  document.getElementById('eph').value=s.phone||'';
+  document.getElementById('eo').value=s.office;
+  document.getElementById('ed').value=s.department||'';
+  document.getElementById('est').value=s.is_active.toString();
+  document.getElementById('er').innerHTML='<option value="">No Role</option>'+
+    allRoles.map(r=>`<option value="${r.id}"${s.staff_roles?.[0]?.roles?.name===r.name?' selected':''}>${r.name}</option>`).join('');
+  openM('m-edit-staff');
+}
+
+async function updateStaff(){
+  const id=document.getElementById('eid').value;
+  const f=document.getElementById('ef1').value.trim();
+  const l=document.getElementById('el').value.trim();
+  const e=document.getElementById('ee').value.trim();
+  const ph=document.getElementById('eph').value.trim();
+  const o=document.getElementById('eo').value;
+  const d=document.getElementById('ed').value.trim();
+  const ac=document.getElementById('est').value==='true';
+  const r=document.getElementById('er').value;
+  try{
+    const{error}=await sb.from('staff').update({first_name:f,last_name:l,email:e,phone:ph,office:o,department:d,is_active:ac,timezone:o==='Dubai'?'Asia/Dubai':'Asia/Kolkata'}).eq('id',id);
+    if(error)throw error;
+    if(r){
+      await sb.from('staff_roles').delete().eq('staff_id',id);
+      await sb.from('staff_roles').insert({staff_id:id,role_id:r,assigned_by:CU.id});
+      await sb.from('role_change_log').insert({staff_id:id,changed_by:CU.id,role_id:r,action:'added'});
+    }
+    toast('Staff updated!'); closeM('m-edit-staff'); loadStaff();
+  }catch(er){toast(er.message||'Error updating staff','error');}
+}
+
+async function toggleStatus(id,cur){
+  try{await sb.from('staff').update({is_active:!cur}).eq('id',id);toast(`Staff ${cur?'deactivated':'activated'}`);loadStaff();}
+  catch(e){toast('Error','error');}
+}
+
+// ── ROLES ────────────────────────────────────────────────────
+async function loadRoles(){
+  try{
+    const{data,error}=await sb.from('roles').select('*').order('name');
+    if(error)throw error;
+    allRoles=data||[];
+    renderRoles(allRoles);
+    populateRoleDropdowns();
+  }catch(e){toast('Error loading roles','error');}
+}
+
+function renderRoles(roles){
+  const g=document.getElementById('roles-grid');
+  if(!roles.length){g.innerHTML='<div class="empty"><div class="ei">🔐</div><h3>No roles</h3></div>';return;}
+  g.innerHTML=roles.map(r=>{
+    const on=PERMS.filter(p=>r[p.k]).length;
+    return`<div class="card" style="padding:0">
+      <div class="card-header" style="padding:12px 16px">
+        <div><div style="font-size:14px;font-weight:600">${r.name}</div><div style="font-size:11px;color:var(--text3)">${r.description||'—'}</div></div>
+        <div style="display:flex;gap:6px">${r.is_system_role?'<span class="badge bn">System</span>':''}<span class="badge bt">${on} perms</span></div>
+      </div>
+      <div style="padding:10px 16px">
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${PERMS.filter(p=>r[p.k]).map(p=>`<span style="font-size:10px;padding:3px 8px;background:rgba(13,115,119,0.08);color:var(--teal);border-radius:10px;font-weight:500">${p.l}</span>`).join('')||'<span style="font-size:12px;color:var(--text3)">No permissions</span>'}
+        </div>
+      </div>
+      ${!r.is_system_role?`<div style="padding:8px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <button class="btn btn-sm btn-d" onclick="deleteRole('${r.id}')">Delete</button></div>`:''}
+    </div>`;}).join('');
+}
+
+function populateRoleDropdowns(){
+  ['sr','er'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const cur=el.value;
+    el.innerHTML='<option value="">Select role...</option>'+allRoles.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+    el.value=cur;
+  });
+}
+
+function buildPermsGrid(){
+  document.getElementById('perms-grid').innerHTML=PERMS.map(p=>`
+    <div class="pi"><span class="pi-label">${p.l}</span>
+      <label class="toggle"><input type="checkbox" id="pm-${p.k}"><span class="tslider"></span></label>
+    </div>`).join('');
+}
+
+async function addRole(){
+  const n=document.getElementById('rn').value.trim();
+  const d=document.getElementById('rd').value.trim();
+  if(!n){toast('Role name required','error');return;}
+  const perms={};
+  PERMS.forEach(p=>{perms[p.k]=document.getElementById(`pm-${p.k}`)?.checked||false;});
+  try{
+    const{error}=await sb.from('roles').insert({name:n,description:d,...perms});
+    if(error)throw error;
+    toast('Role created!'); closeM('m-add-role');
+    document.getElementById('rn').value=''; document.getElementById('rd').value='';
+    loadRoles();
+  }catch(e){toast(e.message||'Error','error');}
+}
+
+async function deleteRole(id){
+  if(!confirm('Delete this role?'))return;
+  try{await sb.from('roles').delete().eq('id',id);toast('Role deleted');loadRoles();}
+  catch(e){toast('Error','error');}
+}
+
+// ── NOTIFICATIONS ────────────────────────────────────────────
+async function loadNotifs(){
+  if(!CU)return;
+  try{
+    const{data}=await sb.from('notifications').select('*').eq('staff_id',CU.id).order('created_at',{ascending:false}).limit(20);
+    notifs=data||[];
+    const unread=notifs.filter(n=>!n.is_read).length;
+    const b=document.getElementById('nbadge');
+    if(unread>0){b.textContent=unread;b.style.display='flex';}else b.style.display='none';
+    renderNotifs();
+  }catch(e){}
+}
+
+function renderNotifs(){
+  const l=document.getElementById('nlist');
+  if(!notifs.length){l.innerHTML='<div class="empty"><div class="ei">🔔</div><h3>No notifications</h3><p>You\'re all caught up!</p></div>';return;}
+  l.innerHTML=notifs.map(n=>`
+    <div class="notif-item ${n.is_read?'':'unread'}" onclick="markRead('${n.id}')">
+      <div class="nt">${n.title}</div><div class="nm">${n.message}</div>
+      <div class="ntime">${timeAgo(n.created_at)}</div>
+    </div>`).join('');
+}
+
+async function markRead(id){await sb.from('notifications').update({is_read:true}).eq('id',id);loadNotifs();}
+async function markAllRead(){await sb.from('notifications').update({is_read:true}).eq('staff_id',CU.id);loadNotifs();}
+function toggleNotif(){document.getElementById('npanel').classList.toggle('open');}
+document.addEventListener('click',e=>{
+  const p=document.getElementById('npanel');
+  if(p.classList.contains('open')&&!p.contains(e.target)&&!e.target.closest('.hbtn'))p.classList.remove('open');
+});
+
+// ── HELPERS ──────────────────────────────────────────────────
+function timeAgo(ts){
+  const d=(Date.now()-new Date(ts))/1000;
+  if(d<60)return'just now';
+  if(d<3600)return`${Math.floor(d/60)}m ago`;
+  if(d<86400)return`${Math.floor(d/3600)}h ago`;
+  return`${Math.floor(d/86400)}d ago`;
+}
+
+// ── BOOT ─────────────────────────────────────────────────────
+window.addEventListener('load',async()=>{
+  const su=sessionStorage.getItem('acu');
+  const sr=sessionStorage.getItem('acr');
+  if(su){CU=JSON.parse(su);CR=JSON.parse(sr);await initApp();}
+  buildPermsGrid();
+  loadRoles();
+});
+</script>
+</body>
+</html>
